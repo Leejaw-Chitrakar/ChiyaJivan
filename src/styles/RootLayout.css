@@ -1,0 +1,19 @@
+.root-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+}
+
+.main-content.not-home {
+  padding-top: 6rem;
+}
+
+@media (min-width: 768px) {
+  .main-content.not-home {
+    padding-top: 7rem;
+  }
+}

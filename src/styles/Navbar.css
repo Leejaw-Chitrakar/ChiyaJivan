@@ -1,0 +1,240 @@
+.navbar-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  transition: all 0.5s;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .navbar-header {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+
+.navbar-header.scrolled-header {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.navbar-header.menu-open-header {
+  background-color: transparent;
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: all 0.5s;
+  padding: 0.875rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .navbar-nav {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.navbar-nav.transparent-nav {
+  background-color: rgba(47, 33, 24, 0.4);
+  border-color: rgba(253, 246, 236, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.navbar-nav.solid-nav {
+  background-color: rgba(253, 246, 236, 0.95);
+  border-color: rgba(61, 43, 31, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+}
+
+.nav-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-img {
+  height: 1.65rem;
+  width: auto;
+  object-fit: contain;
+  transition: all 0.5s;
+}
+
+.nav-img.invert-logo {
+  filter: invert(1) brightness(1.5);
+}
+
+.nav-brand {
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  transition: color 0.5s;
+  font-family: var(--font-serif);
+}
+
+.nav-brand.light-text {
+  color: var(--color-cream);
+}
+
+.nav-brand.dark-text {
+  color: var(--color-bark);
+}
+
+.desktop-menu {
+  display: none;
+  align-items: center;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .desktop-menu {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-menu {
+    gap: 2.75rem;
+  }
+}
+
+.nav-link {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.nav-link.active-link {
+  color: var(--color-terracotta);
+}
+
+.nav-link.light-link {
+  color: var(--color-cream);
+}
+
+.nav-link.light-link:hover {
+  color: #ffe4bf;
+}
+
+.nav-link.dark-link {
+  color: rgba(61, 43, 31, 0.65);
+}
+
+.nav-link.dark-link:hover {
+  color: var(--color-bark);
+}
+
+.mobile-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .mobile-toggle {
+    display: none;
+  }
+}
+
+.hamburger-line {
+  display: block;
+  height: 1.5px;
+  width: 1.5rem;
+  transition: all 0.3s;
+}
+
+.hamburger-line.light-line {
+  background-color: var(--color-cream);
+}
+
+.hamburger-line.dark-line {
+  background-color: var(--color-bark);
+}
+
+.hamburger-line.top-open {
+  background-color: var(--color-bark);
+  transform: rotate(45deg) translateY(6.5px);
+}
+
+.hamburger-line.middle-open {
+  opacity: 0;
+}
+
+.hamburger-line.bottom-open {
+  background-color: var(--color-bark);
+  transform: rotate(-45deg) translateY(-6.5px);
+}
+
+.mobile-overlay {
+  margin-top: 0.75rem;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  transition: all 0.5s;
+}
+
+@media (min-width: 768px) {
+  .mobile-overlay {
+    display: none;
+  }
+}
+
+.mobile-overlay.overlay-open {
+  max-height: 20rem;
+  background-color: rgba(253, 246, 236, 0.98);
+  border: 1px solid rgba(61, 43, 31, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-soft);
+  opacity: 1;
+  padding: 0.75rem 0;
+}
+
+.mobile-overlay.overlay-closed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.mobile-menu-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+}
+
+.mobile-nav-link {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  transition: color 0.3s;
+}
+
+.mobile-nav-link.active-link {
+  color: var(--color-terracotta);
+}
+
+.mobile-nav-link.inactive-link {
+  color: rgba(61, 43, 31, 0.7);
+}
+
+.mobile-nav-link.inactive-link:hover {
+  color: var(--color-bark);
+}
