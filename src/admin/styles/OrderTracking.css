@@ -98,7 +98,7 @@
 /* Summary Cards */
 .order-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
 }
 
@@ -138,6 +138,12 @@
   box-shadow: 0 0 0 2px #6ee7b7;
 }
 
+.order-summary-card.active-Served {
+  background-color: #f5f3ff;
+  border-color: #ede9fe;
+  box-shadow: 0 0 0 2px #c4b5fd;
+}
+
 .order-summary-icon {
   display: inline-flex;
   padding: 0.75rem;
@@ -147,6 +153,7 @@
 
 .order-summary-icon.Pending { background-color: #fffbeb; color: #d97706; }
 .order-summary-icon.Preparing { background-color: #eff6ff; color: #2563eb; }
+.order-summary-icon.Served { background-color: #f5f3ff; color: #7c3aed; }
 .order-summary-icon.Completed { background-color: #ecfdf5; color: #059669; }
 
 .order-summary-count {
@@ -166,6 +173,7 @@
 
 .order-summary-label.Pending { color: #d97706; }
 .order-summary-label.Preparing { color: #2563eb; }
+.order-summary-label.Served { color: #7c3aed; }
 .order-summary-label.Completed { color: #059669; }
 
 /* Orders List */
@@ -231,6 +239,7 @@
 }
 .order-card-bar.Pending { background-color: #fbbf24; }
 .order-card-bar.Preparing { background-color: #60a5fa; }
+.order-card-bar.Served { background-color: #a78bfa; }
 .order-card-bar.Completed { background-color: #34d399; }
 
 .order-card-body {
@@ -358,6 +367,9 @@
 
 .order-card-btn.Preparing { background-color: #3b82f6; }
 .order-card-btn.Preparing:hover { background-color: #2563eb; }
+
+.order-card-btn.Served { background-color: #8b5cf6; }
+.order-card-btn.Served:hover { background-color: #7c3aed; }
 
 .order-card-done {
   display: flex;

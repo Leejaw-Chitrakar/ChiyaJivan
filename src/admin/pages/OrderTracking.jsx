@@ -22,6 +22,11 @@ const STATUS = {
   Preparing: {
     icon: Timer,
     label: "Finish & Serve",
+    next: "Served"
+  },
+  Served: {
+    icon: Utensils,
+    label: "Payed?",
     next: "Completed"
   },
   Completed: {
@@ -93,6 +98,7 @@ export default function OrderTracking() {
   const counts = {
     Pending: orders.filter((o) => o.status === "Pending").length,
     Preparing: orders.filter((o) => o.status === "Preparing").length,
+    Served: orders.filter((o) => o.status === "Served").length,
     Completed: orders.filter((o) => o.status === "Completed").length,
   };
 
@@ -149,7 +155,7 @@ export default function OrderTracking() {
 
       {/* Status Summary Cards */}
       <div className="order-summary-grid">
-        {["Pending", "Preparing", "Completed"].map((status) => {
+        {["Pending", "Preparing", "Served", "Completed"].map((status) => {
           const cfg = STATUS[status];
           const Icon = cfg.icon;
           return (
@@ -204,7 +210,9 @@ export default function OrderTracking() {
 
                 {/* Customer & Items */}
                 <div className="order-card-details">
-                  <p className="order-card-customer">{order.customer}</p>
+                  {order.customer && order.customer !== `Table ${order.table}` && order.customer !== `Table ${order.table} Guest` && (
+                    <p className="order-card-customer">{order.customer}</p>
+                  )}
                   <p className="order-card-items">{order.itemsSummary || "—"}</p>
                   {order.note && (
                     <p className="order-card-note">📝 {order.note}</p>

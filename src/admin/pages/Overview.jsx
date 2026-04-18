@@ -43,7 +43,8 @@ export default function Overview() {
   const todaysRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const pendingCount = orders.filter(o => o.status === 'Pending').length;
   const preparingCount = orders.filter(o => o.status === 'Preparing').length;
-  const activeCustomers = pendingCount + preparingCount;
+  const servedCount = orders.filter(o => o.status === 'Served').length;
+  const activeCustomers = pendingCount + preparingCount + servedCount;
 
   // Find top seller
   const itemCounts = {};
@@ -63,6 +64,7 @@ export default function Overview() {
 
   const statusStyles = {
     Completed: { bg: '#ecfdf5', color: '#059669', dot: '#10b981', border: '#d1fae5' },
+    Served:    { bg: '#f5f3ff', color: '#7c3aed', dot: '#8b5cf6', border: '#ede9fe' },
     Preparing: { bg: '#fffbeb', color: '#d97706', dot: '#f59e0b', border: '#fde68a' },
     Pending:   { bg: '#f9fafb', color: '#6b7280', dot: '#9ca3af', border: '#e5e7eb' },
   };
@@ -176,8 +178,12 @@ export default function Overview() {
                           <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot }} />
                           {order.status}
                         </span>
-                        <span style={{ fontSize: 12, color: '#d1d5db' }}>·</span>
-                        <span className="font-bold" style={{ fontSize: 12, color: '#9ca3af' }}>{order.customer}</span>
+                        {order.customer && order.customer !== `Table ${order.table}` && order.customer !== `Table ${order.table} Guest` && (
+                          <>
+                            <span style={{ fontSize: 12, color: '#d1d5db' }}>·</span>
+                            <span className="font-bold" style={{ fontSize: 12, color: '#9ca3af' }}>{order.customer}</span>
+                          </>
+                        )}
                       </div>
                       <p style={{ fontSize: 13, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.itemsSummary || '—'}</p>
                     </div>
@@ -237,7 +243,7 @@ export default function Overview() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {[
                 { label: 'Completed', pct: todaysOrders > 0 ? Math.round((orders.filter(o => o.status === 'Completed').length / todaysOrders) * 100) : 0 },
-                { label: 'In Progress', pct: todaysOrders > 0 ? Math.round(((pendingCount + preparingCount) / todaysOrders) * 100) : 0 },
+                { label: 'In Progress', pct: todaysOrders > 0 ? Math.round(((pendingCount + preparingCount + servedCount) / todaysOrders) * 100) : 0 },
               ].map(bar => (
                 <div key={bar.label}>
                   <div className="flex justify-between font-bold uppercase" style={{ fontSize: 11, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.65)', marginBottom: 8 }}>
@@ -320,7 +326,11 @@ export default function Overview() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <p className="font-bold uppercase" style={{ fontSize: 10, color: '#9ca3af', letterSpacing: '0.15em', marginBottom: 4 }}>Customer</p>
-                  <p className="font-bold" style={{ fontSize: 16, color: '#3d2b1f' }}>{selectedOrder.customer}</p>
+                  <p className="font-bold" style={{ fontSize: 16, color: '#3d2b1f' }}>
+                    {(!selectedOrder.customer || selectedOrder.customer === `Table ${selectedOrder.table}` || selectedOrder.customer === `Table ${selectedOrder.table} Guest`) 
+                      ? "Anonymous" 
+                      : selectedOrder.customer}
+                  </p>
                 </div>
                 <span className="font-bold uppercase" style={{
                   fontSize: 11, letterSpacing: '0.06em',

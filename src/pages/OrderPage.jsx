@@ -87,7 +87,7 @@ export default function OrderPage() {
     try {
       const orderData = {
         table: tableNumber,
-        customer: customerName.trim() || `Table ${tableNumber} Guest`,
+        customer: customerName.trim() || `Table ${tableNumber}`,
         items: cartItems.map((i) => ({
           id: i.id,
           name: i.name,
