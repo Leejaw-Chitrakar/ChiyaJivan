@@ -368,7 +368,10 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="order-page" style={cartCount > 0 ? { paddingBottom: 300 } : undefined}>
+    <div
+      className="order-page"
+      style={cartCount > 0 ? { paddingBottom: 420 } : undefined}
+    >
       {/* Top Bar */}
       <header className="order-header">
         <div
@@ -509,7 +512,7 @@ export default function OrderPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 className="order-clear-btn"
                 onClick={() => setCart({})}

@@ -74,7 +74,10 @@ export default function OrderTracking() {
         try {
           const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGczIkqCnbihcj4nRHOYt8KhbjkqR3qbucCfazYlRHeXtsCfbDcnRnucu8GgbDgnR3uauLyeaDMjQ3SUsr2kckM1UoOfs7ynaz8xTYCds7mjazwuSn6ar7SfZzcrRHeSr7qnckE0UoKfsr2maz4wTH+cr7aiaDgrR3iSrLKfZTMoQnSSsL2ockM0U4OgsrynbD8wTYCdr7ajaDksSHqUr7OhZzQpQ3WSsLqlbz8xToGfsrynaz4wTH+cr7WiaDkrR3mTrrKfZTMoQnSSsLulbz8xToGfsLqlbD0tSn2arLKdZDQoQ3aTr7qlbz8xTYGer7WiaDkrR3qTrrKhZzYqRHaTsLqlcEIzUoKfsr2nbEAxToCesLajaDotSXuVr7ShZzYqRHaTr7mkbz0vTH+cr7ShZzUqRHWTr7ejZzMoQnOSr7mkbj0uSn2arLKdZDQnQnOSr7mkbj0uSn2arLKdZDQnQnMAAA==");
           audio.volume = 0.3;
+          audio.loop = true;
           audio.play().catch(() => {});
+          // Stop beeping after 3 seconds
+          setTimeout(() => { audio.loop = false; audio.pause(); audio.currentTime = 0; }, 3000);
         } catch (_) {}
         setTimeout(() => setNewOrderFlash(null), 15000);
       }
