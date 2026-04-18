@@ -1,54 +1,95 @@
 # Chiya Jivan 🍵
 
-A high-fidelity, editorial-style landing page for **Chiya Jivan**, a sanctuary of slow sips and Himalayan warmth located in the heart of Thamel, Kathmandu.
+> _A Sanctuary of Slow Sips and Himalayan Warmth_
 
-![Chiya Jivan Preview](https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=1200&h=400&fit=crop&q=80)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg)](https://vitejs.dev/)
+[![React Router](https://img.shields.io/badge/React_Router-7-CA4245.svg)](https://reactrouter.com/)
 
-## ✨ Features
-- **Editorial Design**: A minimalist, high-contrast aesthetic inspired by modern lifestyle journals.
-- **Modular CSS Architecture**: Clean, maintainable standard CSS transition from Tailwind for maximum design control.
-- **Responsive Layouts**: Fully optimized for mobile, tablet, and desktop experiences.
-- **Dynamic Menu**: A curated selection of classic and specialty Himalayan teas with a tabbed interface.
-- **Social Integration**: High-fidelity photo grid ready for Instagram API or LightWidget integration.
-- **Vite-Powered**: Ultra-fast development and optimized production builds.
+[**✨ Live Demo**](https://chiyajivan.web.app)
+
+Chiya Jivan is a high-fidelity, editorial-style digital experience crafted for a boutique tea sanctuary in the heart of Thamel, Kathmandu. Inspired by modern lifestyle journals and the organic textures of the Himalayas, this project showcases a minimalist aesthetic that prioritizes visual clarity and sophisticated typography.
+
+![Chiya Jivan Showcase](https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=1200&h=450&fit=crop&q=80)
+
+## 🎨 Design Philosophy
+
+- **Minimalist Editorial**: High-contrast layouts with plenty of white space, inspired by high-end print magazines.
+- **Organic Warmth**: A curated color palette that evokes the earthiness of clay pots and the amber glow of freshly brewed Himalayan tea.
+- **Sophisticated Typography**: A harmonious blend of _Playfair Display_ for elegant headings and _Inter_ for legible, modern body text.
+
+## ✨ Key Features
+
+- **High-Fidelity Components**: Custom-built React components designed for a premium user experience.
+- **Dynamic Routing**: Seamless page transitions using React Router v7.
+- **Tailored CSS Architecture**: A hybrid approach using Vanilla CSS Modules for granular design control and Tailwind CSS for baseline utilities.
+- **Immersive Gallery**: An Instagram-inspired social grid that brings the sanctuary's atmosphere to the digital space.
+- **Responsive by Design**: Meticulously optimized for every screen, from mobile devices to ultra-wide displays.
 
 ## 🛠️ Tech Stack
-- **Core**: [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **Routing**: [React Router v6](https://reactrouter.com/)
-- **Styling**: Vanilla CSS (Modular Architecture)
-- **Deployment**: [Firebase Hosting](https://firebase.google.com/docs/hosting)
-- **Typography**: Playfair Display (Serif) & Inter (Sans-serif)
+
+| Layer          | Technology                                               |
+| :------------- | :------------------------------------------------------- |
+| **Framework**  | [React 19](https://react.dev/)                           |
+| **Build Tool** | [Vite 8](https://vitejs.dev/)                            |
+| **Routing**    | [React Router 7](https://reactrouter.com/)               |
+| **Styling**    | Vanilla CSS + [Tailwind CSS 4](https://tailwindcss.com/) |
+| **Hosting**    | [Firebase Hosting](https://firebase.google.com/)         |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (Latest LTS recommended)
+
+- [Node.js](https://nodejs.org/) (v18.0.0 or later)
 - npm or yarn
 
 ### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/Chiya_Jivan.git
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
 
-### Deployment
-To build and deploy to Firebase:
+1.  **Clone the Repository**
+
+    ```bash
+    git clone https://github.com/Leejaw-Chitrakar/Chiya_Jivan.git
+    cd Chiya_Jivan
+    ```
+
+2.  **Install Dependencies**
+
+    ```bash
+    npm install
+    ```
+
+3.  **Launch the Experience**
+    ```bash
+    npm run dev
+    ```
+
+### Production Build
+
+To create an optimized production bundle:
+
 ```bash
 npm run build
-firebase deploy
 ```
 
-## 📍 Location
+## 📂 Project Structure
+
+```text
+src/
+├── components/   # Atomic UI components (Navbar, Hero, Menu, etc.)
+├── pages/        # Main page components
+├── rootlayout/   # Routing architecture and layout wrappers
+├── styles/       # Component-specific CSS modules
+├── assets/       # Visual assets and media
+└── main.jsx      # Entry point
+```
+
+## 📍 Visit the Sanctuary
+
+**Chiya Jivan**  
 Thamel Marg, Kathmandu, Nepal — 44600  
-*Daily: 7 AM – 9 PM*
+_Open Daily: 7 AM – 9 PM_
 
 ---
-*Crafted with warmth in Kathmandu.*
+
+_Crafted with soul and steam in Kathmandu._

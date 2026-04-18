@@ -1,0 +1,345 @@
+.qr-manager-container {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Header */
+.qr-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .qr-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.qr-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #3d2b1f;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.qr-subtitle {
+  font-size: 1.125rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0.5rem 0 0 0;
+}
+
+.qr-print-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #AD4928;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 15px -3px rgba(173, 73, 40, 0.2);
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.qr-print-btn:hover {
+  background-color: #8f3d21;
+}
+
+.qr-print-btn:active {
+  transform: scale(0.98);
+}
+
+/* Control Settings Card */
+.qr-control-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+}
+
+.qr-control-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.qr-control-icon {
+  padding: 0.75rem;
+  background-color: rgba(173, 73, 40, 0.1);
+  border-radius: 1rem;
+  color: #AD4928;
+}
+
+.qr-control-title {
+  font-weight: 700;
+  color: #3d2b1f;
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.qr-control-desc {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0.125rem 0 0 0;
+}
+
+.qr-counter {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.qr-counter-btn {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-counter-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.qr-counter-val {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #3d2b1f;
+  width: 4rem;
+  text-align: center;
+}
+
+/* Grid */
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .qr-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .qr-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .qr-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Table Card */
+.qr-table-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.qr-table-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+.qr-table-brand {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #AD4928;
+  margin: 0 0 0.25rem 0;
+}
+
+.qr-table-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3d2b1f;
+  margin: 0 0 1rem 0;
+}
+
+.qr-svg-wrap {
+  padding: 0.75rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  background-color: #ffffff;
+}
+
+.qr-table-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.qr-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #9ca3af;
+  padding: 0.5rem 0;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.qr-action-btn:hover {
+  background-color: #f9fafb;
+  color: #3d2b1f;
+}
+
+/* Preview Modal */
+.qr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.qr-modal-content {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  max-width: 24rem;
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+
+.qr-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+}
+
+.qr-modal-close:hover {
+  background-color: #f3f4f6;
+}
+
+.qr-modal-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.qr-modal-brand {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #AD4928;
+}
+
+.qr-modal-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #3d2b1f;
+  margin: 0 0 0.25rem 0;
+}
+
+.qr-modal-desc {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0 0 2rem 0;
+}
+
+.qr-modal-svg-wrap {
+  display: inline-block;
+  padding: 1.25rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.qr-modal-instruction {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3d2b1f;
+  margin: 0 0 0.5rem 0;
+}
+
+.qr-modal-url {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  word-break: break-all;
+  margin: 0;
+}
+
+.qr-modal-btn {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #AD4928;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 15px -3px rgba(173, 73, 40, 0.2);
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.qr-modal-btn:hover {
+  background-color: #8f3d21;
+}
+
+.qr-modal-btn:active {
+  transform: scale(0.98);
+}

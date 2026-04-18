@@ -1,9 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { subscribeToSocialContent } from '../lib/firestoreService';
 import '../styles/Hero.css';
 
 export default function Hero() {
   const contentRef = useRef(null);
+  const [social, setSocial] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToSocialContent((data) => setSocial(data));
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const el = contentRef.current;
@@ -37,7 +44,7 @@ export default function Hero() {
           {/* Eyebrow */}
           <p className="hero-eyebrow">
             <span className="hero-eyebrow-line" />
-            Est. 2024 · Kathmandu
+            Est. 2024 · Bhaktapur
             <span className="hero-eyebrow-line" />
           </p>
 
@@ -48,7 +55,7 @@ export default function Hero() {
 
           {/* Sub-tagline */}
           <p className="hero-tagline">
-            A sanctuary of slow sips and Himalayan warmth.
+            {social ? social.quote : "A sanctuary of slow sips and Himalayan warmth."}
           </p>
 
           {/* CTA Row */}

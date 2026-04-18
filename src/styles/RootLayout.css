@@ -9,11 +9,11 @@
 }
 
 .main-content.not-home {
-  padding-top: 6rem;
+  padding-top: 4.5rem;
 }
 
 @media (min-width: 768px) {
   .main-content.not-home {
-    padding-top: 7rem;
+    padding-top: 6rem;
   }
 }

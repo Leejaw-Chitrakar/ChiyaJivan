@@ -3,6 +3,9 @@ import RootLayout from './RootLayout';
 import HomePage from '../pages/HomePage';
 import MenuPage from '../pages/MenuPage';
 import SocialPage from '../pages/SocialPage';
+import OrderPage from '../pages/OrderPage';
+import AdminDashboard from '../admin/AdminDashboard';
+import AdminLogin from '../admin/AdminLogin';
 
 const router = createBrowserRouter([
   {
@@ -22,6 +25,18 @@ const router = createBrowserRouter([
         element: <SocialPage />,
       },
     ],
+  },
+  {
+    path: '/order',
+    element: <OrderPage />,
+  },
+  {
+    path: '/admin',
+    element: <AdminDashboard loginOnly />,
+  },
+  {
+    path: '/admin/*',
+    element: <AdminDashboard />,
   },
 ]);
 

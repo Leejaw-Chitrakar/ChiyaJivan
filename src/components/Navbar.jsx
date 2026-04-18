@@ -1,18 +1,27 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
+import { subscribeToShopSettings } from '../lib/firestoreService';
 import logo from '../assets/CJ.png';
 import '../styles/Navbar.css';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shopSettings, setShopSettings] = useState(null);
   const { pathname } = useLocation();
   const isHome = pathname === '/';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    
+    // Subscribe to shop status
+    const unsubscribe = subscribeToShopSettings((data) => setShopSettings(data));
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      unsubscribe();
+    };
   }, []);
 
   const links = [
@@ -58,9 +67,17 @@ export default function Navbar() {
             alt="Chiya Jivan"
             className={`nav-img ${isLightText ? 'invert-logo' : ''}`}
           />
-          <span className={`nav-brand ${isLightText ? 'light-text' : 'dark-text'}`}>
-            Chiya Jivan
-          </span>
+          <div className="flex flex-col">
+            <span className={`nav-brand ${isLightText ? 'light-text' : 'dark-text'}`}>
+              Chiya Jivan
+            </span>
+            {shopSettings && typeof shopSettings.isShopOpen === 'boolean' && (
+              <span className="text-[0.6rem] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5" style={{ color: shopSettings.isShopOpen ? '#10b981' : '#ef4444' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: shopSettings.isShopOpen ? '#10b981' : '#ef4444' }}></span>
+                {shopSettings.isShopOpen ? 'Open Now' : 'Closed'}
+              </span>
+            )}
+          </div>
         </Link>
 
         {/* Desktop Links */}
