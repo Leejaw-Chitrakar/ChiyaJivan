@@ -60,6 +60,8 @@
 
 /* Flash Notification */
 .order-flash-notification {
+  position: relative;
+  overflow: hidden;
   background-color: #fffbeb;
   border: 2px solid #fde68a;
   border-radius: 1rem;
@@ -68,6 +70,20 @@
   align-items: center;
   gap: 1rem;
   animation: flash-pulse 1s ease-in-out 3;
+}
+
+.order-flash-timer-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background-color: #f59e0b;
+  animation: timer-shrink 15s linear forwards;
+}
+
+@keyframes timer-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 @keyframes flash-pulse {
@@ -99,20 +115,35 @@
 .order-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  gap: 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .order-summary-grid {
+    gap: 1.5rem;
+  }
 }
 
 .order-summary-card {
-  padding: 1.75rem;
-  border-radius: 1.5rem;
+  padding: 0.75rem 0.25rem;
+  border-radius: 0.75rem;
   border: 1px solid #f3f4f6;
   background-color: #ffffff;
-  text-align: left;
+  text-align: center;
   transition: all 0.2s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .order-summary-card {
+    padding: 1.75rem;
+    border-radius: 1.5rem;
+    text-align: left;
+    align-items: flex-start;
+  }
 }
 
 .order-summary-card:hover {
@@ -146,9 +177,26 @@
 
 .order-summary-icon {
   display: inline-flex;
-  padding: 0.75rem;
-  border-radius: 1rem;
-  margin-bottom: 1.25rem;
+  padding: 0.4rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.order-summary-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .order-summary-icon {
+    padding: 0.75rem;
+    border-radius: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .order-summary-icon svg {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
 }
 
 .order-summary-icon.Pending { background-color: #fffbeb; color: #d97706; }
@@ -157,18 +205,34 @@
 .order-summary-icon.Completed { background-color: #ecfdf5; color: #059669; }
 
 .order-summary-count {
-  font-size: 2.25rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #3d2b1f;
   margin: 0;
 }
 
+@media (min-width: 640px) {
+  .order-summary-count {
+    font-size: 2.25rem;
+  }
+}
+
 .order-summary-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.55rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  margin: 0.5rem 0 0 0;
+  letter-spacing: 0.02em;
+  margin: 0.25rem 0 0 0;
+  word-break: break-word;
+}
+
+@media (min-width: 640px) {
+  .order-summary-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    margin: 0.5rem 0 0 0;
+    word-break: normal;
+  }
 }
 
 .order-summary-label.Pending { color: #d97706; }

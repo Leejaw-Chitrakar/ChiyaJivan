@@ -6,7 +6,7 @@
   min-height: 100vh;
   background: #fdfbf7;
   font-family: 'Inter', system-ui, sans-serif;
-  padding-bottom: 240px; /* space for sticky cart */
+  padding-bottom:80px;
 }
 
 /* ── Header ── */
@@ -312,8 +312,9 @@
 }
 
 .order-cart-items-list {
-  max-height: 120px;
+  max-height: 200px;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   margin-bottom: 8px;
 }
 
@@ -375,6 +376,30 @@
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
+}
+
+.order-clear-btn {
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #fff;
+  color: #AD4928;
+  border: 2px solid #f0ebe5;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.order-clear-btn:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #ef4444;
+}
+
+.order-clear-btn:active {
+  transform: scale(0.98);
 }
 
 /* ── Order Success Screen ── */

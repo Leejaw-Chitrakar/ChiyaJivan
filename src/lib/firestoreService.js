@@ -44,8 +44,16 @@ export async function updateMenuItem(id, updates) {
 }
 
 /** Toggle a menu item's stock status */
-export async function toggleMenuItemStock(id, currentStock) {
-  return await updateDoc(doc(menuCol, id), { stock: !currentStock });
+export async function toggleMenuItemStock(id, currentStock, fullItem) {
+  try {
+    return await updateDoc(doc(menuCol, id), { stock: !currentStock });
+  } catch (err) {
+    if (fullItem) {
+      // If it fails (e.g. mock data not yet in Firestore), create it
+      return await setDoc(doc(menuCol, id), { ...fullItem, stock: !currentStock });
+    }
+    throw err;
+  }
 }
 
 /** Delete a menu item */

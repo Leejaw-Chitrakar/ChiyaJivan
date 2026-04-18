@@ -9,6 +9,8 @@ import {
   WifiOff,
   Bell,
   Trash2,
+  Eye,
+  X,
 } from "lucide-react";
 import { subscribeToOrders, updateOrderStatus, deleteAllOrders } from "../../lib/firestoreService";
 import "../styles/OrderTracking.css";
@@ -46,11 +48,19 @@ function timeAgo(timestamp) {
   return `${hours} hr${hours > 1 ? "s" : ""} ago`;
 }
 
+const statusStyles = {
+  Completed: { bg: '#ecfdf5', color: '#059669', border: '#d1fae5' },
+  Served:    { bg: '#f5f3ff', color: '#7c3aed', border: '#ede9fe' },
+  Preparing: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  Pending:   { bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
+};
+
 export default function OrderTracking() {
   const [orders, setOrders] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
   const [isLive, setIsLive] = useState(false);
   const [newOrderFlash, setNewOrderFlash] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Subscribe to real-time Firestore updates
   useEffect(() => {
@@ -66,7 +76,7 @@ export default function OrderTracking() {
           audio.volume = 0.3;
           audio.play().catch(() => {});
         } catch (_) {}
-        setTimeout(() => setNewOrderFlash(null), 4000);
+        setTimeout(() => setNewOrderFlash(null), 15000);
       }
       prevCount = liveOrders.length;
       setOrders(liveOrders);
@@ -139,6 +149,7 @@ export default function OrderTracking() {
       {/* New Order Flash */}
       {newOrderFlash && (
         <div className="order-flash-notification">
+          <div className="order-flash-timer-bar" />
           <div className="order-flash-icon-wrap">
             <Bell size={22} />
           </div>
@@ -233,7 +244,21 @@ export default function OrderTracking() {
                 </div>
 
                 {/* Action Button */}
-                <div className="order-card-action-wrap">
+                <div className="order-card-action-wrap" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    style={{
+                      padding: '8px 12px', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 700,
+                      background: '#f8f5f2', color: '#AD4928', border: '1px solid #f0ebe5',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#AD4928'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#AD4928'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8f5f2'; e.currentTarget.style.color = '#AD4928'; e.currentTarget.style.borderColor = '#f0ebe5'; }}
+                  >
+                    <Eye size={16} /> View
+                  </button>
+
                   {cfg.next ? (
                     <button
                       onClick={() => handleStatusChange(order.id, cfg.next)}
@@ -266,6 +291,129 @@ export default function OrderTracking() {
           </div>
         )}
       </div>
+
+      {/* ── Order Detail Modal ── */}
+      {selectedOrder && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 24, maxWidth: 480, width: '100%',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.2)', overflow: 'hidden',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '24px 28px',
+              background: '#AD4928', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '0.2em', opacity: 0.6 }}>Order Details</p>
+                <h3 className="font-bold" style={{ fontSize: 22, marginTop: 4 }}>Table {selectedOrder.table}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                style={{
+                  padding: 8, borderRadius: 12, background: 'rgba(255,255,255,0.15)',
+                  border: 'none', cursor: 'pointer', color: '#fff',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Customer & Status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p className="font-bold uppercase" style={{ fontSize: 10, color: '#9ca3af', letterSpacing: '0.15em', marginBottom: 4 }}>Customer</p>
+                  <p className="font-bold" style={{ fontSize: 16, color: '#3d2b1f' }}>
+                    {(!selectedOrder.customer || selectedOrder.customer === `Table ${selectedOrder.table}` || selectedOrder.customer === `Table ${selectedOrder.table} Guest`) 
+                      ? "Anonymous" 
+                      : selectedOrder.customer}
+                  </p>
+                </div>
+                <span className="font-bold uppercase" style={{
+                  fontSize: 11, letterSpacing: '0.06em',
+                  padding: '5px 14px', borderRadius: 999,
+                  background: (statusStyles[selectedOrder.status] || statusStyles.Pending).bg,
+                  color: (statusStyles[selectedOrder.status] || statusStyles.Pending).color,
+                  border: `1px solid ${(statusStyles[selectedOrder.status] || statusStyles.Pending).border}`,
+                }}>
+                  {selectedOrder.status}
+                </span>
+              </div>
+
+              {/* Items */}
+              <div>
+                <p className="font-bold uppercase" style={{ fontSize: 10, color: '#9ca3af', letterSpacing: '0.15em', marginBottom: 10 }}>Items Ordered</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(selectedOrder.items || []).map((item, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 14px', background: '#fdfbf7', borderRadius: 12,
+                    }}>
+                      <div>
+                        <p className="font-bold" style={{ fontSize: 14, color: '#3d2b1f' }}>{item.name}</p>
+                        <p style={{ fontSize: 12, color: '#9ca3af' }}>Qty: {item.qty}</p>
+                      </div>
+                      <p className="font-bold" style={{ fontSize: 14, color: '#AD4928' }}>Rs. {item.price * item.qty}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              {selectedOrder.note && (
+                <div>
+                  <p className="font-bold uppercase" style={{ fontSize: 10, color: '#9ca3af', letterSpacing: '0.15em', marginBottom: 6 }}>Special Note</p>
+                  <p style={{ fontSize: 14, color: '#6b7280', fontStyle: 'italic', padding: '10px 14px', background: '#fffbeb', borderRadius: 12, border: '1px solid #fde68a' }}>
+                    📝 {selectedOrder.note}
+                  </p>
+                </div>
+              )}
+
+              {/* Total */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: '2px solid #f3f4f6' }}>
+                <p className="font-bold uppercase" style={{ fontSize: 12, color: '#9ca3af', letterSpacing: '0.1em' }}>Total</p>
+                <p className="font-bold" style={{ fontSize: 24, color: '#3d2b1f' }}>Rs. {selectedOrder.total}</p>
+              </div>
+
+              {/* Time */}
+              <p className="flex items-center" style={{ fontSize: 12, color: '#9ca3af', gap: 4 }}>
+                <Clock size={12} /> Ordered {timeAgo(selectedOrder.createdAt)}
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 28px', borderTop: '1px solid #f3f4f6', display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+                  background: '#AD4928', color: '#fff', border: 'none', cursor: 'pointer',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#8f3d21'}
+                onMouseLeave={e => e.currentTarget.style.background = '#AD4928'}
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

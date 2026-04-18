@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -12,9 +12,21 @@ import {
   Menu as MenuIcon,
   ChevronRight,
   Coffee,
+  Clock,
+  X,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
-import { getShopSettings, saveShopSettings } from "../../lib/firestoreService";
+import { getShopSettings, saveShopSettings, subscribeToOrders } from "../../lib/firestoreService";
+
+function timeAgo(timestamp) {
+  if (!timestamp) return 'just now';
+  const seconds = Math.floor((Date.now() - timestamp.toDate().getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} hr${hours > 1 ? 's' : ''} ago`;
+}
 
 export default function AdminLayout({ onLogout }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,6 +34,9 @@ export default function AdminLayout({ onLogout }) {
   const [adminName, setAdminName] = useState("Admin User");
   const [adminLetter, setAdminLetter] = useState("A");
   const [shopSettings, setShopSettings] = useState(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [activeOrders, setActiveOrders] = useState([]);
+  const notifRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +59,26 @@ export default function AdminLayout({ onLogout }) {
       setAdminName(name);
       setAdminLetter(name.charAt(0).toUpperCase());
     }
+  }, []);
+
+  // Subscribe to live orders for notifications
+  useEffect(() => {
+    const unsub = subscribeToOrders((liveOrders) => {
+      const active = liveOrders.filter(o => o.status !== 'Completed');
+      setActiveOrders(active);
+    });
+    return () => unsub();
+  }, []);
+
+  // Close notif dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Pseudo-cron for Auto Schedule
@@ -440,24 +475,166 @@ export default function AdminLayout({ onLogout }) {
 
             <div style={{ width: 1, height: 28, background: "#f3f4f6" }} />
 
-            <button
-              className="relative transition-colors"
-              style={{ padding: 10, borderRadius: 12, color: "#9ca3af" }}
-            >
-              <Bell size={20} />
-              <span
-                className="absolute"
-                style={{
-                  top: 8,
-                  right: 8,
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#AD4928",
-                  border: "2px solid white",
-                }}
-              />
-            </button>
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <button
+                className="relative transition-colors"
+                style={{ padding: 10, borderRadius: 12, color: notifOpen ? '#AD4928' : '#9ca3af', background: notifOpen ? 'rgba(173,73,40,0.08)' : 'transparent' }}
+                onClick={() => setNotifOpen(!notifOpen)}
+              >
+                <Bell size={20} />
+                {activeOrders.length > 0 && (
+                  <span
+                    className="absolute"
+                    style={{
+                      top: 6,
+                      right: 6,
+                      minWidth: 18,
+                      height: 18,
+                      borderRadius: 999,
+                      background: "#AD4928",
+                      border: "2px solid #FDFBF7",
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: '#fff',
+                      padding: '0 4px',
+                    }}
+                  >
+                    {activeOrders.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {notifOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  width: 360,
+                  maxHeight: 440,
+                  background: '#fff',
+                  borderRadius: 20,
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)',
+                  overflow: 'hidden',
+                  zIndex: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  {/* Dropdown Header */}
+                  <div style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <p className="font-bold" style={{ fontSize: 15, color: '#3d2b1f' }}>Notifications</p>
+                      <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{activeOrders.length} active order{activeOrders.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <button
+                      onClick={() => setNotifOpen(false)}
+                      style={{ padding: 6, borderRadius: 8, background: '#f9fafb', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  {/* Dropdown Body */}
+                  <div style={{ flex: 1, overflowY: 'auto', maxHeight: 320 }}>
+                    {activeOrders.length === 0 ? (
+                      <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                        <p style={{ fontSize: 28, marginBottom: 8 }}>🔔</p>
+                        <p className="font-bold" style={{ fontSize: 14, color: '#3d2b1f' }}>All caught up!</p>
+                        <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic', marginTop: 4 }}>No pending orders right now.</p>
+                      </div>
+                    ) : (
+                      activeOrders.slice(0, 10).map((order, i) => {
+                        const statusColor = {
+                          Pending: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+                          Preparing: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+                          Served: { bg: '#f5f3ff', color: '#7c3aed', border: '#ede9fe' },
+                        };
+                        const sc = statusColor[order.status] || statusColor.Pending;
+                        return (
+                          <div
+                            key={order.id}
+                            style={{
+                              padding: '14px 20px',
+                              borderBottom: i < Math.min(activeOrders.length, 10) - 1 ? '1px solid #fafafa' : 'none',
+                              cursor: 'pointer',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.015)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            onClick={() => {
+                              setNotifOpen(false);
+                              navigate('/admin/orders');
+                            }}
+                          >
+                            <div className="flex items-center" style={{ gap: 8, marginBottom: 4 }}>
+                              <span className="font-bold" style={{ fontSize: 13, color: '#AD4928' }}>Table {order.table}</span>
+                              <span className="font-bold uppercase" style={{
+                                fontSize: 9,
+                                letterSpacing: '0.06em',
+                                padding: '2px 8px',
+                                borderRadius: 999,
+                                background: sc.bg,
+                                color: sc.color,
+                                border: `1px solid ${sc.border}`,
+                              }}>
+                                {order.status}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {order.itemsSummary || '—'}
+                            </p>
+                            <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
+                              <span className="font-bold" style={{ fontSize: 12, color: '#3d2b1f' }}>Rs. {order.total}</span>
+                              <span style={{ fontSize: 11, color: '#d1d5db' }}>·</span>
+                              <span className="flex items-center" style={{ fontSize: 11, color: '#9ca3af', gap: 3 }}>
+                                <Clock size={10} />{timeAgo(order.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Dropdown Footer */}
+                  {activeOrders.length > 0 && (
+                    <div style={{ padding: '12px 20px', borderTop: '1px solid #f3f4f6' }}>
+                      <button
+                        onClick={() => {
+                          setNotifOpen(false);
+                          navigate('/admin/orders');
+                        }}
+                        className="font-bold"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          borderRadius: 12,
+                          fontSize: 13,
+                          background: '#AD4928',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#8f3d21'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#AD4928'}
+                      >
+                        View All Orders →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div
               className="flex items-center"

@@ -91,7 +91,7 @@ export default function MenuManager() {
     });
     // Persist to Firestore
     try {
-      await toggleMenuItemStock(id, item.stock);
+      await toggleMenuItemStock(id, item.stock, item);
     } catch (err) {
       console.error('Failed to update Firestore:', err);
       // Revert on error
