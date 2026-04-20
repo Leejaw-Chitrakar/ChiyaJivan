@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { useState, useRef, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   QrCode,
   Download,
@@ -9,28 +9,80 @@ import {
   Eye,
   X,
   Coffee,
-} from 'lucide-react';
-import '../styles/TableQRManager.css';
+} from "lucide-react";
+import {
+  getShopSettings,
+  saveShopSettings,
+  subscribeToShopSettings,
+} from "../../lib/firestoreService";
+import "../styles/TableQRManager.css";
 
-const SITE_URL = 'https://chiyajivan.web.app';
+const SITE_URL = "https://chiyajivan.web.app";
 
 export default function TableQRManager() {
   const [tableCount, setTableCount] = useState(10);
+  const [tableNames, setTableNames] = useState({});
   const [previewTable, setPreviewTable] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const printRef = useRef(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      const settings = await getShopSettings();
+      if (settings) {
+        if (settings.tableCount) setTableCount(settings.tableCount);
+        if (settings.tableNames) setTableNames(settings.tableNames);
+      }
+    }
+    loadSettings();
+
+    // Listen for real-time updates
+    const unsubscribe = subscribeToShopSettings((settings) => {
+      if (settings) {
+        if (settings.tableCount) setTableCount(settings.tableCount);
+        if (settings.tableNames) setTableNames(settings.tableNames);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const updateTableCount = async (newCount) => {
+    if (newCount < 1 || newCount > 100) return;
+    setTableCount(newCount);
+    setIsSyncing(true);
+    try {
+      await saveShopSettings({ tableCount: newCount });
+    } catch (error) {
+      console.error("Failed to sync table count:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const updateTableName = async (tableNum, newName) => {
+    const updatedNames = { ...tableNames, [tableNum]: newName };
+    setTableNames(updatedNames);
+    setIsSyncing(true);
+    try {
+      await saveShopSettings({ tableNames: updatedNames });
+    } catch (error) {
+      console.error("Failed to sync table name:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const tables = Array.from({ length: tableCount }, (_, i) => i + 1);
 
-  const getOrderUrl = (tableNum) =>
-    `${SITE_URL}/order?table=${tableNum}`;
+  const getOrderUrl = (tableNum) => `${SITE_URL}/order?table=${tableNum}`;
 
   const handleDownloadSVG = (tableNum) => {
     const svg = document.getElementById(`qr-svg-${tableNum}`);
     if (!svg) return;
     const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const blob = new Blob([svgData], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `chiyajivan-table-${tableNum}-qr.svg`;
     a.click();
@@ -38,7 +90,7 @@ export default function TableQRManager() {
   };
 
   const handlePrintAll = () => {
-    const printWin = window.open('', '_blank');
+    const printWin = window.open("", "_blank");
     printWin.document.write(`
       <html>
         <head>
@@ -76,12 +128,15 @@ export default function TableQRManager() {
     `);
     tables.forEach((t) => {
       const svgEl = document.getElementById(`qr-svg-${t}`);
-      const svgMarkup = svgEl ? new XMLSerializer().serializeToString(svgEl) : '';
+      const svgMarkup = svgEl
+        ? new XMLSerializer().serializeToString(svgEl)
+        : "";
+      const tableName = tableNames[t] || `Table ${t}`;
       printWin.document.write(`
         <div class="page">
           <div class="card">
             <p class="brand">☕ Chiya Jivan</p>
-            <p class="title">Table ${t}</p>
+            <p class="title">${tableName}</p>
             <p class="subtitle">Scan to order from your phone</p>
             <div class="qr-wrap">${svgMarkup}</div>
             <p class="instruction">📱 Scan the QR code to view our menu and place your order</p>
@@ -90,7 +145,7 @@ export default function TableQRManager() {
         </div>
       `);
     });
-    printWin.document.write('</body></html>');
+    printWin.document.write("</body></html>");
     printWin.document.close();
     setTimeout(() => printWin.print(), 500);
   };
@@ -100,17 +155,13 @@ export default function TableQRManager() {
       {/* Header */}
       <div className="qr-header">
         <div>
-          <h1 className="qr-title">
-            Table QR Codes
-          </h1>
+          <h1 className="qr-title">Table QR Codes</h1>
           <p className="qr-subtitle">
-            Generate scannable QR codes for each table. Customers scan → order → you get notified.
+            Generate scannable QR codes for each table. Customers scan → order →
+            you get notified.
           </p>
         </div>
-        <button
-          onClick={handlePrintAll}
-          className="qr-print-btn"
-        >
+        <button onClick={handlePrintAll} className="qr-print-btn">
           <Printer size={18} />
           Print All QRs
         </button>
@@ -124,42 +175,44 @@ export default function TableQRManager() {
           </div>
           <div>
             <h2 className="qr-control-title">Number of Tables</h2>
-            <p className="qr-control-desc">Set how many table QR codes to generate</p>
+            <p className="qr-control-desc">
+              Set how many table QR codes to generate
+            </p>
           </div>
         </div>
         <div className="qr-counter">
           <button
-            onClick={() => setTableCount(Math.max(1, tableCount - 1))}
+            onClick={() => updateTableCount(tableCount - 1)}
             className="qr-counter-btn"
+            disabled={isSyncing || tableCount <= 1}
           >
             <Minus size={18} />
           </button>
-          <span className="qr-counter-val">
-            {tableCount}
-          </span>
+          <span className="qr-counter-val">{tableCount}</span>
           <button
-            onClick={() => setTableCount(Math.min(50, tableCount + 1))}
+            onClick={() => updateTableCount(tableCount + 1)}
             className="qr-counter-btn"
+            disabled={isSyncing || tableCount >= 100}
           >
             <Plus size={18} />
           </button>
+          {isSyncing && <span className="qr-sync-indicator">Syncing...</span>}
         </div>
       </div>
 
       {/* QR Code Grid */}
       <div className="qr-grid" ref={printRef}>
         {tables.map((tableNum) => (
-          <div
-            key={tableNum}
-            className="qr-table-card"
-          >
+          <div key={tableNum} className="qr-table-card">
             {/* Header */}
-            <p className="qr-table-brand">
-              Chiya Jivan
-            </p>
-            <p className="qr-table-name">
-              Table {tableNum}
-            </p>
+            <p className="qr-table-brand">Chiya Jivan</p>
+            <input
+              type="text"
+              value={tableNames[tableNum] || `Table ${tableNum}`}
+              onChange={(e) => updateTableName(tableNum, e.target.value)}
+              className="qr-table-input"
+              placeholder={`Table ${tableNum}`}
+            />
 
             {/* QR Code */}
             <div className="qr-svg-wrap">
@@ -197,10 +250,7 @@ export default function TableQRManager() {
 
       {/* Preview Modal */}
       {previewTable && (
-        <div
-          className="qr-modal-overlay"
-          onClick={() => setPreviewTable(null)}
-        >
+        <div className="qr-modal-overlay" onClick={() => setPreviewTable(null)}>
           <div
             className="qr-modal-content"
             onClick={(e) => e.stopPropagation()}
@@ -214,16 +264,12 @@ export default function TableQRManager() {
 
             <div className="qr-modal-logo">
               <Coffee size={18} className="text-[#AD4928]" />
-              <p className="qr-modal-brand">
-                Chiya Jivan
-              </p>
+              <p className="qr-modal-brand">Chiya Jivan</p>
             </div>
             <h3 className="qr-modal-title">
-              Table {previewTable}
+              {tableNames[previewTable] || `Table ${previewTable}`}
             </h3>
-            <p className="qr-modal-desc">
-              Scan to order from your phone
-            </p>
+            <p className="qr-modal-desc">Scan to order from your phone</p>
 
             <div className="qr-modal-svg-wrap">
               <QRCodeSVG
@@ -238,9 +284,7 @@ export default function TableQRManager() {
             <p className="qr-modal-instruction">
               📱 Scan to view menu & place your order
             </p>
-            <p className="qr-modal-url">
-              {getOrderUrl(previewTable)}
-            </p>
+            <p className="qr-modal-url">{getOrderUrl(previewTable)}</p>
 
             <button
               onClick={() => handleDownloadSVG(previewTable)}

@@ -9,6 +9,7 @@ import MenuManager from "./pages/MenuManager";
 import OrderTracking from "./pages/OrderTracking";
 import TableQRManager from "./pages/TableQRManager";
 import SocialManager from "./pages/SocialManager";
+import History from "./pages/History";
 import Settings from "./pages/Settings";
 
 export default function AdminDashboard({ loginOnly = false }) {
@@ -79,6 +80,7 @@ export default function AdminDashboard({ loginOnly = false }) {
         <Route path="orders" element={<OrderTracking />} />
         <Route path="tables" element={<TableQRManager />} />
         <Route path="social" element={<SocialManager />} />
+        <Route path="history" element={<History />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="dashboard" replace />} />

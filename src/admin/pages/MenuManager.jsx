@@ -42,12 +42,13 @@ const SEED_MENU = {
 
 /** Group a flat array of items by category */
 function groupByCategory(items) {
-  return items.reduce((acc, item) => {
+  const grouped = items.reduce((acc, item) => {
     const cat = item.category || 'Uncategorized';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
   }, {});
+  return grouped;
 }
 
 const CATEGORY_COLORS = {
@@ -64,15 +65,39 @@ export default function MenuManager() {
 
   // Load from Firestore on mount
   useEffect(() => {
+    let isMounted = true;
     getMenuItems()
       .then((items) => {
-        if (items.length > 0) {
-          setMenu(groupByCategory(items));
+        if (!isMounted) return;
+        if (items && items.length > 0) {
+          // Intelligent merge: Keep seed items but overlay Firestore items by name
+          const dbMenu = groupByCategory(items);
+          setMenu(prev => {
+            const merged = { ...prev };
+            Object.keys(dbMenu).forEach(cat => {
+              if (!merged[cat]) merged[cat] = [];
+              
+              dbMenu[cat].forEach(newItem => {
+                // Try to find existing item in the same category by name
+                const idx = merged[cat].findIndex(i => i.name === newItem.name);
+                if (idx >= 0) {
+                  // Update existing item with Firestore data (including ID)
+                  merged[cat][idx] = { ...merged[cat][idx], ...newItem };
+                } else {
+                  // Add new item as a completely new entry
+                  merged[cat].push(newItem);
+                }
+              });
+            });
+            return merged;
+          });
         }
-        // else keep SEED_MENU as fallback
       })
       .catch((err) => console.error('Firestore load error:', err))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => { isMounted = false; };
   }, []);
 
 
@@ -150,15 +175,25 @@ export default function MenuManager() {
       {/* Summary Strip */}
       <div className="menu-summary-grid">
         {[
-          { label: 'Total Items', value: totalItems, type: 'total' },
-          { label: 'Available', value: totalItems - outOfStock, type: 'available' },
-          { label: 'Out of Stock', value: outOfStock, type: 'out' },
-        ].map(s => (
-          <div key={s.label} className={`menu-summary-card ${s.type}`}>
-            <p className={`menu-summary-val ${s.type}`}>{s.value}</p>
-            <p className="menu-summary-label">{s.label}</p>
-          </div>
-        ))}
+          { label: 'Total', value: totalItems, type: 'total', icon: Tag, color: '#3d2b1f', bg: '#f9fafb' },
+          { label: 'In Stock', value: totalItems - outOfStock, type: 'available', icon: CheckCircle2, color: '#059669', bg: '#ecfdf5' },
+          { label: 'Out', value: outOfStock, type: 'out', icon: AlertCircle, color: '#ef4444', bg: '#fef2f2' },
+        ].map(s => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className={`menu-summary-card ${s.type}-new-style`} style={{ borderTop: `4px solid ${s.color}` }}>
+              <div className="flex items-center justify-between w-full">
+                <div className="menu-summary-icon-wrap" style={{ background: s.bg, color: s.color }}>
+                  <Icon size={18} />
+                </div>
+              </div>
+              <div className="menu-summary-content-new">
+                <p className="menu-summary-label-new" style={{ color: "#9ca3af" }}>{s.label}</p>
+                <p className="menu-summary-val-new">{s.value}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Search + Category Filter */}

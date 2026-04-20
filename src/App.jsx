@@ -3,7 +3,6 @@ import Hero from './components/Hero';
 import Menu from './components/Menu';
 import Social from './components/Social';
 import Footer from './components/Footer';
-import './index.css';
 
 export default function App() {
   return (

@@ -44,9 +44,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding-top: 7rem;
-  padding-bottom: 7rem;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
 }
 
 @media (min-width: 640px) {
@@ -107,13 +106,13 @@
 }
 
 .hero-headline {
-  font-size: clamp(2.5rem, 8.5vw, 6rem);
+  font-size: clamp(2.25rem, 9vw, 6rem);
   font-weight: 700;
-  line-height: 0.92;
+  line-height: 0.95;
   letter-spacing: -0.025em;
   color: var(--color-cream);
   font-family: var(--font-serif);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .hero-headline-italic {

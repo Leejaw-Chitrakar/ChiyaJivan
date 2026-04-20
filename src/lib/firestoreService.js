@@ -70,6 +70,32 @@ export async function getOrders() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/** Fetch orders within a specific date range */
+export async function getOrdersByDateRange(startDate, endDate) {
+  try {
+    // Note: This requires a composite index in Firestore if combined with orderBy
+    // For now, we'll fetch and filter in-memory if it's a small dataset, 
+    // or use a simpler query if indexes aren't set up.
+    const q = query(ordersCol, orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    
+    const allOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    
+    if (!startDate && !endDate) return allOrders;
+    
+    return allOrders.filter(order => {
+      if (!order.createdAt) return false;
+      const orderDate = order.createdAt.toDate();
+      const afterStart = startDate ? orderDate >= startDate : true;
+      const beforeEnd = endDate ? orderDate <= endDate : true;
+      return afterStart && beforeEnd;
+    });
+  } catch (error) {
+    console.error("Error fetching orders by date range:", error);
+    return [];
+  }
+}
+
 /** Subscribe to live order updates (real-time) */
 export function subscribeToOrders(callback) {
   const q = query(ordersCol, orderBy("createdAt", "desc"));

@@ -38,9 +38,11 @@ const sections = [
 
 export default function Settings() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showShopModal, setShowShopModal] = useState(false);
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [openTime, setOpenTime] = useState('07:00');
   const [closeTime, setCloseTime] = useState('21:00');
+  const [tableCount, setTableCount] = useState(10);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function Settings() {
         if (data.autoScheduleEnabled !== undefined) setScheduleEnabled(data.autoScheduleEnabled);
         if (data.openTime) setOpenTime(data.openTime);
         if (data.closeTime) setCloseTime(data.closeTime);
+        if (data.tableCount) setTableCount(data.tableCount);
       }
     }
     loadSettings();
@@ -58,6 +61,8 @@ export default function Settings() {
   const handleOpenSection = (name) => {
     if (name === 'Auto-Status Schedule') {
       setShowScheduleModal(true);
+    } else if (name === 'Shop Preferences') {
+      setShowShopModal(true);
     } else {
       alert(`Settings for "${name}" are coming soon.`);
     }
@@ -72,6 +77,15 @@ export default function Settings() {
     });
     setIsSaving(false);
     setShowScheduleModal(false);
+  };
+
+  const saveShopPrefs = async () => {
+    setIsSaving(true);
+    await saveShopSettings({
+      tableCount
+    });
+    setIsSaving(false);
+    setShowShopModal(false);
   };
 
   return (
@@ -185,6 +199,60 @@ export default function Settings() {
               >
                 <Save size={18} />
                 {isSaving ? 'Saving...' : 'Save Schedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showShopModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-[#3d2b1f]">Shop Preferences</h2>
+              <button 
+                onClick={() => setShowShopModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={isSaving}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Number of Tables</label>
+                <p className="text-xs text-gray-500 mb-3">Sets how many QR codes are generated and tracked.</p>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setTableCount(Math.max(1, tableCount - 1))}
+                    className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input 
+                    type="number" 
+                    value={tableCount}
+                    onChange={(e) => setTableCount(parseInt(e.target.value) || 1)}
+                    className="w-20 text-center py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#AD4928] focus:bg-white focus:outline-none transition-colors font-bold text-lg"
+                  />
+                  <button
+                    onClick={() => setTableCount(Math.min(100, tableCount + 1))}
+                    className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={saveShopPrefs}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-3 bg-[#AD4928] hover:bg-[#8B3A20] text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Save size={18} />
+                {isSaving ? 'Saving...' : 'Save Preferences'}
               </button>
             </div>
           </div>

@@ -157,9 +157,9 @@ export default function Overview() {
           {today}
         </p>
         <h1
-          className="font-bold"
+          className="font-bold overview-title"
           style={{
-            fontSize: 32,
+            fontSize: "clamp(24px, 6vw, 32px)",
             color: "#3d2b1f",
             lineHeight: 1.2,
             fontFamily: "'Playfair Display', Georgia, serif",
@@ -179,29 +179,57 @@ export default function Overview() {
         </p>
       </div>
 
+      <style>{`
+        .overview-stats-wrapper {
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 12px !important;
+          width: 100% !important;
+        }
+        @media (min-width: 768px) {
+          .overview-stats-wrapper {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 20px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .overview-stats-wrapper {
+            gap: 8px !important;
+          }
+        }
+        .main-overview-grid {
+          display: grid;
+          grid-template-columns: 1fr 360px;
+          gap: 24px;
+        }
+        @media (max-width: 1024px) {
+          .main-overview-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+
+
       {/* ── Stats ── */}
-      <div
-        id="stats-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 20,
-        }}
-      >
+      <div className="overview-stats-wrapper">
         {stats.map((stat) => (
           <div
             key={stat.name}
             style={{
               background: "#ffffff",
-              borderRadius: 20,
+              borderRadius: 24,
               border: "1px solid #f3f4f6",
-              borderTop: `4px solid ${stat.accent}`,
-              padding: 24,
+              borderTop: `4px solid ${stat.color}`,
+              padding: "24px 20px",
               display: "flex",
               flexDirection: "column",
               gap: 16,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
               transition: "transform 0.2s, box-shadow 0.2s",
+              minWidth: 0,
+              position: "relative",
+              overflow: "hidden"
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
@@ -212,7 +240,7 @@ export default function Overview() {
               e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
             }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between w-full">
               <div
                 className="flex items-center justify-center"
                 style={{
@@ -223,39 +251,41 @@ export default function Overview() {
                   color: stat.color,
                 }}
               >
-                <stat.icon size={22} strokeWidth={2} />
+                <stat.icon size={22} strokeWidth={2.5} />
               </div>
-              <span
-                className="flex items-center font-bold"
-                style={{
-                  gap: 4,
-                  fontSize: 11,
-                  color: "#059669",
-                  background: "#ecfdf5",
-                  border: "1px solid #d1fae5",
-                  padding: "4px 10px",
-                  borderRadius: 999,
+              <div 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{ 
+                  background: "#f0fdf4", 
+                  border: "1px solid #dcfce7",
+                  color: "#16a34a",
+                  fontSize: 10,
+                  fontWeight: 700
                 }}
               >
-                <TrendingUp size={11} />
-                {stat.change}
-              </span>
+                <TrendingUp size={12} />
+                <span>{stat.change}</span>
+              </div>
             </div>
-            <div>
+            <div className="text-left w-full mt-2">
               <p
                 className="font-bold uppercase"
                 style={{
                   fontSize: 10,
                   color: "#9ca3af",
-                  letterSpacing: "0.15em",
-                  marginBottom: 6,
+                  letterSpacing: "0.05em",
+                  marginBottom: 8
                 }}
               >
                 {stat.name}
               </p>
               <p
                 className="font-bold"
-                style={{ fontSize: 22, color: "#3d2b1f", lineHeight: 1.2 }}
+                style={{ 
+                  fontSize: "clamp(24px, 6vw, 32px)", 
+                  color: "#3d2b1f", 
+                  lineHeight: 1
+                }}
               >
                 {stat.value}
               </p>
@@ -267,7 +297,7 @@ export default function Overview() {
       {/* ── Orders + Performance ── */}
       <div
         id="main-grid"
-        style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 24 }}
+        className="main-overview-grid"
       >
         {/* Recent Orders */}
         <div
@@ -329,7 +359,7 @@ export default function Overview() {
           </div>
 
           {/* Scrollable Rows – 5 visible, scroll for more */}
-          <div style={{ flex: 1, overflowY: "auto", maxHeight: 100 }}>
+          <div style={{ flex: 1, overflowY: "auto", maxHeight: 500 }}>
             {orders.length === 0 ? (
               <div style={{ padding: "48px 28px", textAlign: "center" }}>
                 <p style={{ fontSize: 36, marginBottom: 12 }}>🍵</p>

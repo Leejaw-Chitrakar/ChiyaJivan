@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Coffee,
   Clock,
+  History,
   X,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
@@ -155,6 +156,12 @@ export default function AdminLayout({ onLogout }) {
       path: "/admin/social",
       icon: Share2,
       desc: "Content & hours",
+    },
+    {
+      name: "Sales History",
+      path: "/admin/history",
+      icon: History,
+      desc: "Past days records",
     },
     // { name: 'Settings', path: '/admin/settings', icon: Settings, desc: 'Account preferences' },
   ];
@@ -509,20 +516,7 @@ export default function AdminLayout({ onLogout }) {
 
               {/* Notification Dropdown */}
               {notifOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  width: 360,
-                  maxHeight: 440,
-                  background: '#fff',
-                  borderRadius: 20,
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)',
-                  overflow: 'hidden',
-                  zIndex: 200,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}>
+                <div className="notif-dropdown">
                   {/* Dropdown Header */}
                   <div style={{
                     padding: '16px 20px',
@@ -684,7 +678,7 @@ export default function AdminLayout({ onLogout }) {
           className="flex-1"
           style={{ overflowY: "auto", overflowX: "hidden" }}
         >
-          <div style={{ padding: "32px 32px 48px", maxWidth: "100%" }}>
+          <div className="admin-content-container">
             <Outlet />
           </div>
         </div>
@@ -703,6 +697,49 @@ export default function AdminLayout({ onLogout }) {
         .no-scrollbar {
           -ms-overflow-style: none; /* IE and Edge */
           scrollbar-width: none; /* Firefox */
+        }
+        
+        .admin-content-container {
+          padding: 32px;
+          padding-bottom: 48px;
+          max-width: 100%;
+        }
+        
+        .notif-dropdown {
+          position: absolute;
+          top: calc(100% + 15px);
+          right: 0;
+          width: 400px;
+          max-height: 520px;
+          background: #fff;
+          border-radius: 28px;
+          box-shadow: 
+            0 25px 70px -15px rgba(0, 0, 0, 0.25),
+            0 0 0 1px rgba(0,0,0,0.05);
+          overflow: hidden;
+          z-index: 500;
+          display: flex;
+          flex-direction: column;
+          animation: slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 767px) {
+          .notif-dropdown {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            width: auto !important;
+            max-width: none !important;
+            max-height: calc(100vh - 32px);
+            border-radius: 24px;
+            margin: 0;
+          }
         }
       `}</style>
     </div>

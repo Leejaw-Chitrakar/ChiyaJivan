@@ -16,6 +16,7 @@ import {
   subscribeToOrders,
   updateOrderStatus,
   deleteAllOrders,
+  subscribeToShopSettings,
 } from "../../lib/firestoreService";
 import "../styles/OrderTracking.css";
 
@@ -63,6 +64,7 @@ const statusStyles = {
 
 export default function OrderTracking() {
   const [orders, setOrders] = useState([]);
+  const [tableNames, setTableNames] = useState({});
   const [activeFilter, setActiveFilter] = useState("All");
   const [isLive, setIsLive] = useState(false);
   const [newOrderFlash, setNewOrderFlash] = useState(null);
@@ -75,6 +77,13 @@ export default function OrderTracking() {
     audio.volume = 0.5;
     audio.preload = "auto";
     bellRef.current = audio;
+
+    // Subscribe to shop settings for table names
+    const unsubSettings = subscribeToShopSettings((settings) => {
+      if (settings && settings.tableNames) {
+        setTableNames(settings.tableNames);
+      }
+    });
 
     const unlock = () => {
       audio
@@ -90,6 +99,7 @@ export default function OrderTracking() {
     document.addEventListener("click", unlock);
     document.addEventListener("touchstart", unlock);
     return () => {
+      unsubSettings();
       document.removeEventListener("click", unlock);
       document.removeEventListener("touchstart", unlock);
     };
@@ -198,7 +208,7 @@ export default function OrderTracking() {
           </div>
           <div>
             <p className="order-flash-title">
-              🔔 New Order from Table {newOrderFlash.table}!
+              🔔 New Order from {tableNames[newOrderFlash.table] || `Table ${newOrderFlash.table}`}!
             </p>
             <p className="order-flash-desc">
               {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}
@@ -257,7 +267,9 @@ export default function OrderTracking() {
               <div className="order-card-body">
                 {/* Table & Time */}
                 <div className="order-card-info-main">
-                  <p className="order-card-table">Table {order.table}</p>
+                  <p className="order-card-table">
+                    {tableNames[order.table] || `Table ${order.table}`}
+                  </p>
                   <div className="order-card-time">
                     <Clock size={13} />
                     <span className="order-card-time-text">
@@ -285,7 +297,7 @@ export default function OrderTracking() {
                 <div className="order-card-badge-wrap">
                   <span className="order-card-badge">
                     <Utensils size={12} />
-                    Table {order.table}
+                    {tableNames[order.table] || `Table ${order.table}`}
                   </span>
                 </div>
 
@@ -415,7 +427,7 @@ export default function OrderTracking() {
                   className="font-bold"
                   style={{ fontSize: 22, marginTop: 4 }}
                 >
-                  Table {selectedOrder.table}
+                  {tableNames[selectedOrder.table] || `Table ${selectedOrder.table}`}
                 </h3>
               </div>
               <button

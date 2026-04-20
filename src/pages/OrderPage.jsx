@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import {
+  getShopSettings,
+  subscribeToShopSettings,
+} from "../lib/firestoreService";
 import "../styles/OrderPage.css";
 
 // Same menu data as the main Menu component
@@ -195,12 +199,24 @@ export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table") || "?";
   const [activeTab, setActiveTab] = useState("Hot Favorites");
-  const [cart, setCart] = useState({});
-  const [customerName, setCustomerName] = useState("");
+  const [tableCount, setTableCount] = useState(10);
+  const [tableNames, setTableNames] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [lastOrder, setLastOrder] = useState(null);
+
+  useEffect(() => {
+    const unsub = subscribeToShopSettings((settings) => {
+      if (settings) {
+        if (settings.tableCount) setTableCount(settings.tableCount);
+        if (settings.tableNames) setTableNames(settings.tableNames);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const currentTableName = tableNames[tableNumber] || `Table ${tableNumber}`;
 
   const items = categories[activeTab];
 
@@ -237,7 +253,8 @@ export default function OrderPage() {
     try {
       const orderData = {
         table: tableNumber,
-        customer: customerName.trim() || `Table ${tableNumber}`,
+        tableName: currentTableName,
+        customer: customerName.trim() || currentTableName,
         items: cartItems.map((i) => ({
           id: i.id,
           name: i.name,
@@ -288,7 +305,7 @@ export default function OrderPage() {
               </div>
               <div className="order-success-row">
                 <span>Table</span>
-                <strong>{tableNumber}</strong>
+                <strong>{currentTableName}</strong>
               </div>
 
               <div
@@ -387,7 +404,7 @@ export default function OrderPage() {
             <span className="order-header-logo">☕</span>
             <div>
               <h1 className="order-header-title">Chiya Jivan</h1>
-              <p className="order-header-subtitle">Table {tableNumber}</p>
+              <p className="order-header-subtitle">{currentTableName}</p>
             </div>
           </div>
           <Link

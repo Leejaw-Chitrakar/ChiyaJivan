@@ -199,26 +199,26 @@
 
 .menu-card-header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   width: 100%;
+}
+
+@media (min-width: 480px) {
+  .menu-card-header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
 }
 
 .menu-item-title-wrap {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   flex: 1;
-}
-
-@media (min-width: 480px) {
-  .menu-item-title-wrap {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-  }
 }
 
 .menu-item-title {

@@ -153,8 +153,6 @@ const categories = {
 };
 
 const TABS = Object.keys(categories);
-// Generate array 1 to 10 for tables
-const TABLE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 export default function Menu() {
   const navigate = useNavigate();
@@ -162,15 +160,27 @@ export default function Menu() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [tableNum, setTableNum] = useState("");
   const [isShopOpen, setIsShopOpen] = useState(true);
+  const [tableCount, setTableCount] = useState(10);
+  const [tableNames, setTableNames] = useState({});
 
   useEffect(() => {
     const unsub = subscribeToShopSettings((settings) => {
-      if (settings && typeof settings.isShopOpen === 'boolean') {
-        setIsShopOpen(settings.isShopOpen);
+      if (settings) {
+        if (typeof settings.isShopOpen === 'boolean') {
+          setIsShopOpen(settings.isShopOpen);
+        }
+        if (settings.tableCount) {
+          setTableCount(parseInt(settings.tableCount) || 10);
+        }
+        if (settings.tableNames) {
+          setTableNames(settings.tableNames);
+        }
       }
     });
     return () => unsub();
   }, []);
+
+  const tableOptions = Array.from({ length: tableCount }, (_, i) => i + 1);
 
   const items = categories[active];
 
@@ -205,8 +215,10 @@ export default function Menu() {
                   required
                 >
                   <option value="" disabled>Select Table...</option>
-                  {TABLE_OPTIONS.map(num => (
-                    <option key={num} value={num}>T{num}</option>
+                  {tableOptions.map(num => (
+                    <option key={num} value={num}>
+                      {tableNames[num] || `Table ${num}`}
+                    </option>
                   ))}
                 </select>
                 <div className="menu-modal-select-icon">
