@@ -67,66 +67,23 @@ export default function OrderTracking() {
   const [tableNames, setTableNames] = useState({});
   const [activeFilter, setActiveFilter] = useState("All");
   const [isLive, setIsLive] = useState(false);
-  const [newOrderFlash, setNewOrderFlash] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const bellRef = useRef(null);
 
-  // Pre-load bell chime & unlock browser autoplay on first interaction
+  // Subscribe to shop settings for table names
   useEffect(() => {
-    const audio = new Audio("/bell-chime.mp3");
-    audio.volume = 0.5;
-    audio.preload = "auto";
-    bellRef.current = audio;
-
-    // Subscribe to shop settings for table names
     const unsubSettings = subscribeToShopSettings((settings) => {
       if (settings && settings.tableNames) {
         setTableNames(settings.tableNames);
       }
     });
 
-    const unlock = () => {
-      audio
-        .play()
-        .then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        })
-        .catch(() => {});
-      document.removeEventListener("click", unlock);
-      document.removeEventListener("touchstart", unlock);
-    };
-    document.addEventListener("click", unlock);
-    document.addEventListener("touchstart", unlock);
-    return () => {
-      unsubSettings();
-      document.removeEventListener("click", unlock);
-      document.removeEventListener("touchstart", unlock);
-    };
+    return () => unsubSettings();
   }, []);
 
   // Subscribe to real-time Firestore updates
   useEffect(() => {
-    let prevCount = 0;
+    let prevCount = null;
     const unsub = subscribeToOrders((liveOrders) => {
-      // Flash notification for new orders
-      if (prevCount > 0 && liveOrders.length > prevCount) {
-        const newest = liveOrders[0];
-        setNewOrderFlash(newest);
-        // Play bell chime sound (3 seconds)
-        try {
-          const audio = bellRef.current;
-          if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-            setTimeout(() => {
-              audio.pause();
-              audio.currentTime = 0;
-            }, 3000);
-          }
-        } catch (_) {}
-        setTimeout(() => setNewOrderFlash(null), 10000);
-      }
       prevCount = liveOrders.length;
       setOrders(liveOrders);
       setIsLive(true);
@@ -158,17 +115,45 @@ export default function OrderTracking() {
     }
   };
 
+  // Grouping logic
+  const tableGroups = orders.reduce((acc, order) => {
+    if (order.status === "Completed") return acc; // Only live orders
+    const tableId = order.table;
+    if (!acc[tableId]) {
+      acc[tableId] = {
+        tableId,
+        tableName: tableNames[tableId] || `Table ${tableId}`,
+        orders: [],
+        total: 0,
+        items: [],
+        customer: order.customer,
+        createdAt: order.createdAt,
+        note: order.note
+      };
+    }
+    acc[tableId].orders.push(order);
+    acc[tableId].total += order.total;
+    acc[tableId].items.push(...(order.items || []));
+    if (order.note && !acc[tableId].note) acc[tableId].note = order.note;
+    // Earliest order for timing
+    if (order.createdAt && (!acc[tableId].createdAt || order.createdAt < acc[tableId].createdAt)) {
+      acc[tableId].createdAt = order.createdAt;
+    }
+    return acc;
+  }, {});
+
+  const tableList = Object.values(tableGroups).sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+
   const counts = {
-    Pending: orders.filter((o) => o.status === "Pending").length,
-    Preparing: orders.filter((o) => o.status === "Preparing").length,
-    Served: orders.filter((o) => o.status === "Served").length,
-    Completed: orders.filter((o) => o.status === "Completed").length,
+    Pending: tableList.filter(t => t.orders.some(o => o.status === "Pending")).length,
+    Preparing: tableList.filter(t => t.orders.some(o => o.status === "Preparing")).length,
+    Served: tableList.filter(t => t.orders.some(o => o.status === "Served")).length,
+    Completed: orders.filter(o => o.status === "Completed").length,
   };
 
-  const filtered =
-    activeFilter === "All"
-      ? orders
-      : orders.filter((o) => o.status === activeFilter);
+  const filteredTables = activeFilter === "All" 
+    ? tableList 
+    : tableList.filter(t => t.orders.some(o => o.status === activeFilter));
 
   return (
     <div className="order-tracking-container">
@@ -176,9 +161,6 @@ export default function OrderTracking() {
       <div className="order-tracking-header">
         <div>
           <h1 className="order-tracking-title">Order Tracking</h1>
-          <p className="order-tracking-subtitle">
-            Live orders from table QR scans appear here in real-time.
-          </p>
         </div>
         <div className="flex items-center gap-4">
           {orders.length > 0 && (
@@ -199,23 +181,6 @@ export default function OrderTracking() {
         </div>
       </div>
 
-      {/* New Order Flash */}
-      {newOrderFlash && (
-        <div className="order-flash-notification">
-          <div className="order-flash-timer-bar" />
-          <div className="order-flash-icon-wrap">
-            <Bell size={22} />
-          </div>
-          <div>
-            <p className="order-flash-title">
-              🔔 New Order from {tableNames[newOrderFlash.table] || `Table ${newOrderFlash.table}`}!
-            </p>
-            <p className="order-flash-desc">
-              {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Status Summary Cards */}
       <div className="order-summary-grid">
@@ -244,8 +209,8 @@ export default function OrderTracking() {
       <div className="order-list-section">
         <div className="order-list-header">
           <h2 className="order-list-title">
-            {activeFilter === "All" ? "All Orders" : `${activeFilter} Orders`}
-            <span className="order-list-title-count">({filtered.length})</span>
+            {activeFilter === "All" ? "Live Tables" : `${activeFilter} Tables`}
+            <span className="order-list-title-count">({filteredTables.length})</span>
           </h2>
           {activeFilter !== "All" && (
             <button
@@ -257,113 +222,95 @@ export default function OrderTracking() {
           )}
         </div>
 
-        {filtered.map((order) => {
-          const cfg = STATUS[order.status] || STATUS.Pending;
+        {filteredTables.map((table) => {
+          // Determine the "main" status to show for the table card styling
+          // Preference: Pending > Preparing > Served
+          const statuses = table.orders.map(o => o.status);
+          const priorityStatus = 
+            statuses.includes("Pending") ? "Pending" :
+            statuses.includes("Preparing") ? "Preparing" :
+            statuses.includes("Served") ? "Served" : "Completed";
+
+          const itemsSummary = table.items.map(i => `${i.name} x${i.qty}`).join(", ");
+
           return (
-            <div key={order.id} className="order-card">
-              {/* Color bar */}
-              <div className={`order-card-bar ${order.status}`} />
+            <div key={table.tableId} className="order-card">
+              {/* Color bar based on priority status */}
+              <div className={`order-card-bar ${priorityStatus}`} />
 
               <div className="order-card-body">
                 {/* Table & Time */}
                 <div className="order-card-info-main">
                   <p className="order-card-table">
-                    {tableNames[order.table] || `Table ${order.table}`}
+                    {table.tableName}
                   </p>
                   <div className="order-card-time">
                     <Clock size={13} />
                     <span className="order-card-time-text">
-                      {timeAgo(order.createdAt)}
+                      {timeAgo(table.createdAt)}
                     </span>
                   </div>
                 </div>
 
                 {/* Customer & Items */}
                 <div className="order-card-details">
-                  {order.customer &&
-                    order.customer !== `Table ${order.table}` &&
-                    order.customer !== `Table ${order.table} Guest` && (
-                      <p className="order-card-customer">{order.customer}</p>
-                    )}
+                  {table.customer && table.customer !== table.tableName && (
+                    <p className="order-card-customer">{table.customer}</p>
+                  )}
                   <p className="order-card-items">
-                    {order.itemsSummary || "—"}
+                    {itemsSummary || "—"}
                   </p>
-                  {order.note && (
-                    <p className="order-card-note">📝 {order.note}</p>
+                  {table.note && (
+                    <p className="order-card-note">📝 {table.note}</p>
                   )}
                 </div>
 
-                {/* Type badge */}
-                <div className="order-card-badge-wrap">
-                  <span className="order-card-badge">
-                    <Utensils size={12} />
-                    {tableNames[order.table] || `Table ${order.table}`}
-                  </span>
+                <div className="order-card-status-list">
+                  {table.orders.map((subOrder, idx) => {
+                    const subCfg = STATUS[subOrder.status] || STATUS.Pending;
+                    return (
+                      <div key={subOrder.id} className="sub-order-row">
+                         <span className="sub-order-label">ORDER #{idx+1}</span>
+                         <span className={`order-card-badge ${subOrder.status}`} style={{ margin: 0, padding: '4px 10px', fontSize: '10px' }}>
+                            {subOrder.status}
+                         </span>
+                         <div style={{ flex: 1 }} />
+                         {subCfg.next && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(subOrder.id, subCfg.next);
+                              }}
+                              className={`order-card-btn ${subOrder.status}`}
+                              style={{ padding: '6px 14px', fontSize: '11px', height: 'auto', fontWeight: 800 }}
+                            >
+                              {subCfg.label}
+                            </button>
+                         )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Total */}
                 <div className="order-card-total-wrap">
-                  <p className="order-card-total">Rs. {order.total}</p>
+                  <p className="order-card-total">Total: Rs. {table.total}</p>
                 </div>
 
-                {/* Action Button */}
-                <div
-                  className="order-card-action-wrap"
-                  style={{
-                    display: "flex",
-                    gap: "0.75rem",
-                    alignItems: "center",
-                  }}
-                >
+                <div className="order-card-action-wrap">
                   <button
-                    onClick={() => setSelectedOrder(order)}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "0.75rem",
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                      background: "#f8f5f2",
-                      color: "#AD4928",
-                      border: "1px solid #f0ebe5",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#AD4928";
-                      e.currentTarget.style.color = "#fff";
-                      e.currentTarget.style.borderColor = "#AD4928";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#f8f5f2";
-                      e.currentTarget.style.color = "#AD4928";
-                      e.currentTarget.style.borderColor = "#f0ebe5";
-                    }}
+                    onClick={() => setSelectedOrder(table)}
+                    className="view-btn-custom"
                   >
-                    <Eye size={16} /> View
+                    <Eye size={16} /> Details
                   </button>
-
-                  {cfg.next ? (
-                    <button
-                      onClick={() => handleStatusChange(order.id, cfg.next)}
-                      className={`order-card-btn ${order.status}`}
-                    >
-                      {cfg.label}
-                    </button>
-                  ) : (
-                    <span className="order-card-done">
-                      <CheckCircle2 size={18} /> Done
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
           );
         })}
 
-        {filtered.length === 0 && (
+        {filteredTables.length === 0 && (
           <div className="order-empty-state">
             <p className="order-empty-icon">🍵</p>
             <h3 className="order-empty-title">
@@ -427,7 +374,7 @@ export default function OrderTracking() {
                   className="font-bold"
                   style={{ fontSize: 22, marginTop: 4 }}
                 >
-                  {tableNames[selectedOrder.table] || `Table ${selectedOrder.table}`}
+                  {selectedOrder.tableName || `Table ${selectedOrder.table}`}
                 </h3>
               </div>
               <button
@@ -454,7 +401,7 @@ export default function OrderTracking() {
                 gap: 20,
               }}
             >
-              {/* Customer & Status */}
+              {/* Customer & Total Orders */}
               <div
                 style={{
                   display: "flex",
@@ -478,32 +425,13 @@ export default function OrderTracking() {
                     className="font-bold"
                     style={{ fontSize: 16, color: "#3d2b1f" }}
                   >
-                    {!selectedOrder.customer ||
-                    selectedOrder.customer === `Table ${selectedOrder.table}` ||
-                    selectedOrder.customer ===
-                      `Table ${selectedOrder.table} Guest`
-                      ? "Anonymous"
-                      : selectedOrder.customer}
+                    {selectedOrder.customer && selectedOrder.customer !== selectedOrder.tableName ? selectedOrder.customer : "Anonymous"}
                   </p>
                 </div>
-                <span
-                  className="font-bold uppercase"
-                  style={{
-                    fontSize: 11,
-                    letterSpacing: "0.06em",
-                    padding: "5px 14px",
-                    borderRadius: 999,
-                    background: (
-                      statusStyles[selectedOrder.status] || statusStyles.Pending
-                    ).bg,
-                    color: (
-                      statusStyles[selectedOrder.status] || statusStyles.Pending
-                    ).color,
-                    border: `1px solid ${(statusStyles[selectedOrder.status] || statusStyles.Pending).border}`,
-                  }}
-                >
-                  {selectedOrder.status}
-                </span>
+                <div className="text-right">
+                   <p className="font-bold uppercase" style={{ fontSize: 10, color: "#9ca3af", letterSpacing: "0.15em", marginBottom: 4 }}>Active Orders</p>
+                   <p className="font-bold" style={{ fontSize: 16, color: "#AD4928" }}>{selectedOrder.orders?.length || 1}</p>
+                </div>
               </div>
 
               {/* Items */}
@@ -517,7 +445,7 @@ export default function OrderTracking() {
                     marginBottom: 10,
                   }}
                 >
-                  Items Ordered
+                  Combined Items
                 </p>
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 8 }}
@@ -568,7 +496,7 @@ export default function OrderTracking() {
                       marginBottom: 6,
                     }}
                   >
-                    Special Note
+                    Notes
                   </p>
                   <p
                     style={{
@@ -604,7 +532,7 @@ export default function OrderTracking() {
                     letterSpacing: "0.1em",
                   }}
                 >
-                  Total
+                  Total Bill
                 </p>
                 <p
                   className="font-bold"
@@ -619,7 +547,7 @@ export default function OrderTracking() {
                 className="flex items-center"
                 style={{ fontSize: 12, color: "#9ca3af", gap: 4 }}
               >
-                <Clock size={12} /> Ordered {timeAgo(selectedOrder.createdAt)}
+                <Clock size={12} /> First ordered {timeAgo(selectedOrder.createdAt)}
               </p>
             </div>
 

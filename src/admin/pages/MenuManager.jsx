@@ -1,49 +1,174 @@
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  CheckCircle2, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Plus,
+  Edit3,
+  Trash2,
+  CheckCircle2,
   AlertCircle,
   Tag,
   X,
-  Loader2
-} from 'lucide-react';
-import { getMenuItems, toggleMenuItemStock, deleteMenuItem } from '../../lib/firestoreService';
-import '../styles/MenuManager.css';
+  Loader2,
+} from "lucide-react";
+import {
+  getMenuItems,
+  toggleMenuItemStock,
+  deleteMenuItem,
+  addMenuItem,
+  updateMenuItem,
+} from "../../lib/firestoreService";
+import "../styles/MenuManager.css";
 
 // Fallback seed data (used if Firestore is empty)
 const SEED_MENU = {
-  'Hot Favorites': [
-    { id: 'h1', name: 'Milk Tea', price: '35', stock: true, category: 'Hot Favorites', desc: 'Our signature blend of CTC tea and creamy milk.' },
-    { id: 'h2', name: 'Milk Masala Tea', price: '45', stock: true, category: 'Hot Favorites', desc: 'Spiced milk tea with fresh ginger and secret mountain spices.' },
-    { id: 'h3', name: 'Black Masala Tea', price: '25', stock: true, category: 'Hot Favorites', desc: 'Invigorating black tea with aromatic spices.' },
-    { id: 'h4', name: 'Hot Lemon Honey Ginger', price: '100', stock: true, category: 'Hot Favorites', desc: 'Wellness brew — zesty lemon, ginger, and honey.' },
-    { id: 'h5', name: 'Hot Chocolate', price: '160', stock: true, category: 'Hot Favorites', desc: 'Velvety, rich chocolate with a dusting of cocoa.' },
+  "Hot Favorites": [
+    {
+      id: "h1",
+      name: "Milk Tea",
+      price: "35",
+      stock: true,
+      category: "Hot Favorites",
+      desc: "Our signature blend of CTC tea and creamy milk.",
+    },
+    {
+      id: "h2",
+      name: "Milk Masala Tea",
+      price: "45",
+      stock: true,
+      category: "Hot Favorites",
+      desc: "Spiced milk tea with fresh ginger and secret mountain spices.",
+    },
+    {
+      id: "h3",
+      name: "Black Masala Tea",
+      price: "25",
+      stock: true,
+      category: "Hot Favorites",
+      desc: "Invigorating black tea with aromatic spices.",
+    },
+    {
+      id: "h4",
+      name: "Hot Lemon Honey Ginger",
+      price: "100",
+      stock: true,
+      category: "Hot Favorites",
+      desc: "Wellness brew — zesty lemon, ginger, and honey.",
+    },
+    {
+      id: "h5",
+      name: "Hot Chocolate",
+      price: "160",
+      stock: true,
+      category: "Hot Favorites",
+      desc: "Velvety, rich chocolate with a dusting of cocoa.",
+    },
   ],
-  'Cold Drinks': [
-    { id: 'c1', name: 'Mixed Lassi', price: '150', stock: true, category: 'Cold Drinks', desc: 'Thick, creamy yogurt lassi with seasonal fruits.' },
-    { id: 'c2', name: 'KitKat Milkshake', price: '225', stock: false, category: 'Cold Drinks', desc: 'Vanilla blend with crunchy KitKat and chocolate.' },
-    { id: 'c3', name: 'Classic Mojito', price: '150', stock: true, category: 'Cold Drinks', desc: 'Fresh mint, lime, and sparkling soda.' },
-    { id: 'c4', name: 'Blue Lagoon', price: '140', stock: true, category: 'Cold Drinks', desc: 'Vibrant citrus punch with a hint of blue Curacao.' },
-    { id: 'c5', name: 'Mocha Milkshake', price: '250', stock: true, category: 'Cold Drinks', desc: 'Blending rich chocolate and bold espresso notes.' },
+  "Cold Drinks": [
+    {
+      id: "c1",
+      name: "Mixed Lassi",
+      price: "150",
+      stock: true,
+      category: "Cold Drinks",
+      desc: "Thick, creamy yogurt lassi with seasonal fruits.",
+    },
+    {
+      id: "c2",
+      name: "KitKat Milkshake",
+      price: "225",
+      stock: false,
+      category: "Cold Drinks",
+      desc: "Vanilla blend with crunchy KitKat and chocolate.",
+    },
+    {
+      id: "c3",
+      name: "Classic Mojito",
+      price: "150",
+      stock: true,
+      category: "Cold Drinks",
+      desc: "Fresh mint, lime, and sparkling soda.",
+    },
+    {
+      id: "c4",
+      name: "Blue Lagoon",
+      price: "140",
+      stock: true,
+      category: "Cold Drinks",
+      desc: "Vibrant citrus punch with a hint of blue Curacao.",
+    },
+    {
+      id: "c5",
+      name: "Mocha Milkshake",
+      price: "250",
+      stock: true,
+      category: "Cold Drinks",
+      desc: "Blending rich chocolate and bold espresso notes.",
+    },
   ],
-  'Momo & Food': [
-    { id: 'm1', name: 'Buff Momo', price: '120 / 130', stock: true, category: 'Momo & Food', desc: 'Hand-folded dumplings filled with lean buffalo meat.' },
-    { id: 'm2', name: 'Chicken Momo', price: '150 / 160', stock: true, category: 'Momo & Food', desc: 'Succulent chicken filling in a delicate wrapper.' },
-    { id: 'm3', name: 'Veg Momo', price: '100 / 120', stock: true, category: 'Momo & Food', desc: 'Filled with fresh garden greens and local spices.' },
-    { id: 'm4', name: 'Buff Chilly', price: '180', stock: true, category: 'Momo & Food', desc: 'Wok-tossed bison chunks with spicy peppers.' },
-    { id: 'm5', name: 'Chicken Wings', price: '350', stock: true, category: 'Momo & Food', desc: 'Crispy wings tossed in our signature Himalayan-glaze sauce.' },
-    { id: 'm6', name: 'Sandwich (Veg/Chicken)', price: '160 / 200', stock: true, category: 'Momo & Food', desc: 'Freshly toasted with your choice of filling.' },
-    { id: 'm7', name: 'Sausages (Stick)', price: '40 / 50', stock: true, category: 'Momo & Food', desc: 'Grilled to perfection. Choice of Buff or Chicken.' },
-  ]
+  "Momo & Food": [
+    {
+      id: "m1",
+      name: "Buff Momo",
+      price: "120 / 130",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Hand-folded dumplings filled with lean buffalo meat.",
+    },
+    {
+      id: "m2",
+      name: "Chicken Momo",
+      price: "150 / 160",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Succulent chicken filling in a delicate wrapper.",
+    },
+    {
+      id: "m3",
+      name: "Veg Momo",
+      price: "100 / 120",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Filled with fresh garden greens and local spices.",
+    },
+    {
+      id: "m4",
+      name: "Buff Chilly",
+      price: "180",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Wok-tossed bison chunks with spicy peppers.",
+    },
+    {
+      id: "m5",
+      name: "Chicken Wings",
+      price: "350",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Crispy wings tossed in our signature Himalayan-glaze sauce.",
+    },
+    {
+      id: "m6",
+      name: "Sandwich (Veg/Chicken)",
+      price: "160 / 200",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Freshly toasted with your choice of filling.",
+    },
+    {
+      id: "m7",
+      name: "Sausages (Stick)",
+      price: "40 / 50",
+      stock: true,
+      category: "Momo & Food",
+      desc: "Grilled to perfection. Choice of Buff or Chicken.",
+    },
+  ],
 };
 
 /** Group a flat array of items by category */
 function groupByCategory(items) {
   const grouped = items.reduce((acc, item) => {
-    const cat = item.category || 'Uncategorized';
+    const cat = item.category || "Uncategorized";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
@@ -52,16 +177,44 @@ function groupByCategory(items) {
 }
 
 const CATEGORY_COLORS = {
-  'Hot Favorites': { dot: 'bg-orange-400', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' },
-  'Cold Drinks':   { dot: 'bg-blue-400',   bg: 'bg-blue-50',   text: 'text-blue-600',   border: 'border-blue-100' },
-  'Momo & Food':   { dot: 'bg-[#AD4928]',  bg: 'bg-[#AD4928]/5', text: 'text-[#AD4928]', border: 'border-[#AD4928]/10' },
+  "Hot Favorites": {
+    dot: "bg-orange-400",
+    bg: "bg-orange-50",
+    text: "text-orange-600",
+    border: "border-orange-100",
+  },
+  "Cold Drinks": {
+    dot: "bg-blue-400",
+    bg: "bg-blue-50",
+    text: "text-blue-600",
+    border: "border-blue-100",
+  },
+  "Momo & Food": {
+    dot: "bg-[#AD4928]",
+    bg: "bg-[#AD4928]/5",
+    text: "text-[#AD4928]",
+    border: "border-[#AD4928]/10",
+  },
 };
 
 export default function MenuManager() {
   const [menu, setMenu] = useState(SEED_MENU);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("add"); // 'add' or 'edit'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    category: "Hot Favorites",
+    desc: "",
+    stock: true,
+  });
 
   // Load from Firestore on mount
   useEffect(() => {
@@ -72,14 +225,16 @@ export default function MenuManager() {
         if (items && items.length > 0) {
           // Intelligent merge: Keep seed items but overlay Firestore items by name
           const dbMenu = groupByCategory(items);
-          setMenu(prev => {
+          setMenu((prev) => {
             const merged = { ...prev };
-            Object.keys(dbMenu).forEach(cat => {
+            Object.keys(dbMenu).forEach((cat) => {
               if (!merged[cat]) merged[cat] = [];
-              
-              dbMenu[cat].forEach(newItem => {
+
+              dbMenu[cat].forEach((newItem) => {
                 // Try to find existing item in the same category by name
-                const idx = merged[cat].findIndex(i => i.name === newItem.name);
+                const idx = merged[cat].findIndex(
+                  (i) => i.name === newItem.name,
+                );
                 if (idx >= 0) {
                   // Update existing item with Firestore data (including ID)
                   merged[cat][idx] = { ...merged[cat][idx], ...newItem };
@@ -93,62 +248,140 @@ export default function MenuManager() {
           });
         }
       })
-      .catch((err) => console.error('Firestore load error:', err))
+      .catch((err) => console.error("Firestore load error:", err))
       .finally(() => {
         if (isMounted) setLoading(false);
       });
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-
-  const categories = ['All', ...Object.keys(menu)];
+  const categories = ["All", ...Object.keys(menu)];
 
   const totalItems = Object.values(menu).flat().length;
-  const outOfStock = Object.values(menu).flat().filter(i => !i.stock).length;
+  const outOfStock = Object.values(menu)
+    .flat()
+    .filter((i) => !i.stock).length;
 
   const toggleStock = async (category, id) => {
-    const item = menu[category]?.find(i => i.id === id);
+    const item = menu[category]?.find((i) => i.id === id);
     if (!item) return;
     // Optimistic UI update
-    setMenu(prev => {
-      const updated = prev[category].map(i => i.id === id ? { ...i, stock: !i.stock } : i);
+    setMenu((prev) => {
+      const updated = prev[category].map((i) =>
+        i.id === id ? { ...i, stock: !i.stock } : i,
+      );
       return { ...prev, [category]: updated };
     });
     // Persist to Firestore
     try {
       await toggleMenuItemStock(id, item.stock, item);
     } catch (err) {
-      console.error('Failed to update Firestore:', err);
+      console.error("Failed to update Firestore:", err);
       // Revert on error
-      setMenu(prev => {
-        const reverted = prev[category].map(i => i.id === id ? { ...i, stock: item.stock } : i);
+      setMenu((prev) => {
+        const reverted = prev[category].map((i) =>
+          i.id === id ? { ...i, stock: item.stock } : i,
+        );
         return { ...prev, [category]: reverted };
       });
     }
   };
 
   const deleteItem = async (category, id) => {
-    if (!window.confirm('Remove this item from the menu?')) return;
+    if (!window.confirm("Remove this item from the menu?")) return;
     // Optimistic UI update
-    setMenu(prev => {
-      const updated = prev[category].filter(item => item.id !== id);
+    setMenu((prev) => {
+      const updated = prev[category].filter((item) => item.id !== id);
       return { ...prev, [category]: updated };
     });
     // Persist to Firestore
     try {
       await deleteMenuItem(id);
     } catch (err) {
-      console.error('Failed to delete from Firestore:', err);
+      console.error("Failed to delete from Firestore:", err);
     }
   };
 
+  const openAddModal = () => {
+    setModalMode("add");
+    setFormData({
+      name: "",
+      price: "",
+      category: "Hot Favorites",
+      desc: "",
+      stock: true,
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item) => {
+    setModalMode("edit");
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      price: item.price,
+      category: item.category,
+      desc: item.desc || "",
+      stock: item.stock,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveItem = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (modalMode === "add") {
+        const docRef = await addMenuItem(formData);
+        const newItem = { id: docRef.id, ...formData };
+
+        setMenu((prev) => {
+          const updated = { ...prev };
+          if (!updated[formData.category]) updated[formData.category] = [];
+          updated[formData.category] = [...updated[formData.category], newItem];
+          return updated;
+        });
+      } else {
+        await updateMenuItem(editingItem.id, formData);
+
+        setMenu((prev) => {
+          const updated = { ...prev };
+          // If category changed, move item
+          if (editingItem.category !== formData.category) {
+            updated[editingItem.category] = updated[
+              editingItem.category
+            ].filter((i) => i.id !== editingItem.id);
+            if (!updated[formData.category]) updated[formData.category] = [];
+            updated[formData.category].push({
+              id: editingItem.id,
+              ...formData,
+            });
+          } else {
+            updated[formData.category] = updated[formData.category].map((i) =>
+              i.id === editingItem.id ? { ...i, ...formData } : i,
+            );
+          }
+          return updated;
+        });
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save item:", err);
+      alert("Failed to save item. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const filteredMenu = () => {
     const result = {};
-    Object.keys(menu).forEach(cat => {
-      if (activeCategory === 'All' || activeCategory === cat) {
-        const items = menu[cat].filter(item =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    Object.keys(menu).forEach((cat) => {
+      if (activeCategory === "All" || activeCategory === cat) {
+        const items = menu[cat].filter((item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()),
         );
         if (items.length > 0) result[cat] = items;
       }
@@ -165,9 +398,8 @@ export default function MenuManager() {
         <div>
           <p className="menu-manager-eyebrow">Chiya Jivan — Admin</p>
           <h1 className="menu-manager-title">Menu Management</h1>
-          <p className="menu-manager-subtitle">Manage your offerings, availability, and pricing in real time.</p>
         </div>
-        <button className="menu-manager-add-btn">
+        <button onClick={openAddModal} className="menu-manager-add-btn">
           <Plus size={18} strokeWidth={2.5} /> Add New Item
         </button>
       </div>
@@ -175,20 +407,53 @@ export default function MenuManager() {
       {/* Summary Strip */}
       <div className="menu-summary-grid">
         {[
-          { label: 'Total', value: totalItems, type: 'total', icon: Tag, color: '#3d2b1f', bg: '#f9fafb' },
-          { label: 'In Stock', value: totalItems - outOfStock, type: 'available', icon: CheckCircle2, color: '#059669', bg: '#ecfdf5' },
-          { label: 'Out', value: outOfStock, type: 'out', icon: AlertCircle, color: '#ef4444', bg: '#fef2f2' },
-        ].map(s => {
+          {
+            label: "Total",
+            value: totalItems,
+            type: "total",
+            icon: Tag,
+            color: "#3d2b1f",
+            bg: "#f9fafb",
+          },
+          {
+            label: "In Stock",
+            value: totalItems - outOfStock,
+            type: "available",
+            icon: CheckCircle2,
+            color: "#059669",
+            bg: "#ecfdf5",
+          },
+          {
+            label: "Out",
+            value: outOfStock,
+            type: "out",
+            icon: AlertCircle,
+            color: "#ef4444",
+            bg: "#fef2f2",
+          },
+        ].map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className={`menu-summary-card ${s.type}-new-style`} style={{ borderTop: `4px solid ${s.color}` }}>
+            <div
+              key={s.label}
+              className={`menu-summary-card ${s.type}-new-style`}
+              style={{ borderTop: `4px solid ${s.color}` }}
+            >
               <div className="flex items-center justify-between w-full">
-                <div className="menu-summary-icon-wrap" style={{ background: s.bg, color: s.color }}>
+                <div
+                  className="menu-summary-icon-wrap"
+                  style={{ background: s.bg, color: s.color }}
+                >
                   <Icon size={18} />
                 </div>
               </div>
               <div className="menu-summary-content-new">
-                <p className="menu-summary-label-new" style={{ color: "#9ca3af" }}>{s.label}</p>
+                <p
+                  className="menu-summary-label-new"
+                  style={{ color: "#9ca3af" }}
+                >
+                  {s.label}
+                </p>
                 <p className="menu-summary-val-new">{s.value}</p>
               </div>
             </div>
@@ -208,17 +473,20 @@ export default function MenuManager() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="menu-search-clear">
+            <button
+              onClick={() => setSearchTerm("")}
+              className="menu-search-clear"
+            >
               <X size={16} />
             </button>
           )}
         </div>
         <div className="menu-cat-filters">
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`menu-cat-btn ${activeCategory === cat ? 'active' : ''}`}
+              className={`menu-cat-btn ${activeCategory === cat ? "active" : ""}`}
             >
               {cat}
             </button>
@@ -229,42 +497,60 @@ export default function MenuManager() {
       {/* Items */}
       <div>
         {Object.keys(displayItems).length > 0 ? (
-          Object.keys(displayItems).map(category => {
-            const colors = CATEGORY_COLORS[category] || { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-100' };
+          Object.keys(displayItems).map((category) => {
+            const colors = CATEGORY_COLORS[category] || {
+              dot: "bg-gray-400",
+              bg: "bg-gray-50",
+              text: "text-gray-600",
+              border: "border-gray-100",
+            };
             return (
-              <div key={category} style={{ marginTop: '2.5rem' }}>
+              <div key={category} style={{ marginTop: "2.5rem" }}>
                 {/* Category Label */}
                 <div className="menu-cat-header">
-                  <div className={`menu-cat-label ${colors.bg} ${colors.border}`}>
+                  <div
+                    className={`menu-cat-label ${colors.bg} ${colors.border}`}
+                  >
                     <span className={`menu-cat-dot ${colors.dot}`} />
-                    <span className={`menu-cat-name ${colors.text}`}>{category}</span>
+                    <span className={`menu-cat-name ${colors.text}`}>
+                      {category}
+                    </span>
                   </div>
                   <div className="menu-cat-line" />
-                  <span className="menu-cat-count">{displayItems[category].length} items</span>
+                  <span className="menu-cat-count">
+                    {displayItems[category].length} items
+                  </span>
                 </div>
 
                 <div className="menu-item-grid">
-                  {displayItems[category].map(item => (
+                  {displayItems[category].map((item) => (
                     <div
                       key={item.id}
-                      className={`menu-item-card ${!item.stock ? 'disabled' : ''}`}
+                      className={`menu-item-card ${!item.stock ? "disabled" : ""}`}
                     >
                       <div className="menu-item-content">
                         <div className="menu-item-top">
                           <div className="menu-item-title-wrap">
-                            <h3 className={`menu-item-title ${!item.stock ? 'strike' : ''}`}>
+                            <h3
+                              className={`menu-item-title ${!item.stock ? "strike" : ""}`}
+                            >
                               {item.name}
                             </h3>
                             <div className="menu-item-price-wrap">
                               <Tag size={12} className="text-[#AD4928]" />
-                              <span className="menu-item-price">Rs. {item.price}</span>
+                              <span className="menu-item-price">
+                                Rs. {item.price}
+                              </span>
                             </div>
                           </div>
                           <div className="menu-item-actions">
-                            <button className="menu-item-action-btn">
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="menu-item-action-btn"
+                            >
                               <Edit3 size={16} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => deleteItem(category, item.id)}
                               className="menu-item-action-btn danger"
                             >
@@ -277,13 +563,19 @@ export default function MenuManager() {
                       </div>
 
                       <div className="menu-item-footer">
-                        <span className={`menu-item-status ${item.stock ? 'avail' : 'out'}`}>
-                          {item.stock ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                          {item.stock ? 'Available' : 'Out of Stock'}
+                        <span
+                          className={`menu-item-status ${item.stock ? "avail" : "out"}`}
+                        >
+                          {item.stock ? (
+                            <CheckCircle2 size={14} />
+                          ) : (
+                            <AlertCircle size={14} />
+                          )}
+                          {item.stock ? "Available" : "Out of Stock"}
                         </span>
                         <button
                           onClick={() => toggleStock(category, item.id)}
-                          className={`menu-item-toggle ${item.stock ? 'avail' : 'out'}`}
+                          className={`menu-item-toggle ${item.stock ? "avail" : "out"}`}
                         >
                           <div className="menu-item-toggle-dot" />
                         </button>
@@ -301,12 +593,127 @@ export default function MenuManager() {
             </div>
             <div>
               <h3 className="menu-empty-title">No items found</h3>
-              <p className="menu-empty-desc">Try a different search or category.</p>
+              <p className="menu-empty-desc">
+                Try a different search or category.
+              </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Add/Edit Modal ── */}
+      {isModalOpen && (
+        <div
+          className="menu-modal-overlay"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="menu-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="menu-modal-header">
+              <div className="menu-modal-title-group">
+                <p>MENU EDITOR</p>
+                <h2>
+                  {modalMode === "add" ? "Add New Item" : "Edit Menu Item"}
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="menu-modal-close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem}>
+              <div className="menu-modal-body">
+                <div className="menu-form-grid">
+                  <div className="menu-form-group full">
+                    <label>Item Name</label>
+                    <input
+                      type="text"
+                      className="menu-form-input"
+                      placeholder="e.g. Masala Tea"
+                      required
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="menu-form-group">
+                    <label>Category</label>
+                    <select
+                      className="menu-form-select"
+                      required
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                    >
+                      <option value="Hot Favorites">Hot Favorites</option>
+                      <option value="Cold Drinks">Cold Drinks</option>
+                      <option value="Momo & Food">Momo & Food</option>
+                      <option value="Bakery & Desserts">
+                        Bakery & Desserts
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="menu-form-group">
+                    <label>Price (Rs.)</label>
+                    <input
+                      type="text"
+                      className="menu-form-input"
+                      placeholder="e.g. 45 or 120 / 150"
+                      required
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="menu-form-group full">
+                    <label>Description</label>
+                    <textarea
+                      className="menu-form-textarea"
+                      placeholder="Describe the item ingredients or taste..."
+                      value={formData.desc}
+                      onChange={(e) =>
+                        setFormData({ ...formData, desc: e.target.value })
+                      }
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div className="menu-modal-footer">
+                <button
+                  type="button"
+                  className="menu-btn-cancel"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="menu-btn-submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <>{modalMode === "add" ? "Create Item" : "Save Changes"}</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

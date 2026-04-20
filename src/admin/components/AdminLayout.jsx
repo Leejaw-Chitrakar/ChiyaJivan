@@ -17,7 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
-import { getShopSettings, saveShopSettings, subscribeToOrders } from "../../lib/firestoreService";
+import { subscribeToShopSettings, saveShopSettings, subscribeToOrders } from "../../lib/firestoreService";
+import "../styles/GlobalAdmin.css";
 
 function timeAgo(timestamp) {
   if (!timestamp) return 'just now';
@@ -37,21 +38,25 @@ export default function AdminLayout({ onLogout }) {
   const [shopSettings, setShopSettings] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [activeOrders, setActiveOrders] = useState([]);
+  const [newOrderFlash, setNewOrderFlash] = useState(null);
+  const [tableNames, setTableNames] = useState({});
+  const bellRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load shop status from Firestore
-    async function loadStatus() {
-      const settings = await getShopSettings();
+    // Subscribe to real-time shop settings
+    const unsubSettings = subscribeToShopSettings((settings) => {
       if (settings) {
         if (typeof settings.isShopOpen === "boolean") {
           setIsShopOpen(settings.isShopOpen);
         }
+        if (settings.tableNames) {
+          setTableNames(settings.tableNames);
+        }
         setShopSettings(settings);
       }
-    }
-    loadStatus();
+    });
 
     // Set admin face
     if (auth.currentUser) {
@@ -60,11 +65,62 @@ export default function AdminLayout({ onLogout }) {
       setAdminName(name);
       setAdminLetter(name.charAt(0).toUpperCase());
     }
+
+    // Pre-load bell chime & unlock browser autoplay
+    const audio = new Audio("/bell-chime.mp3");
+    audio.volume = 1.0;
+    audio.preload = "auto";
+    bellRef.current = audio;
+
+    const unlock = () => {
+      // First play to unlock, then reset
+      audio.play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        })
+        .catch(err => console.log("Audio unlock failed:", err));
+      
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+    };
+    document.addEventListener("click", unlock, { once: true });
+    document.addEventListener("touchstart", unlock, { once: true });
+
+    return () => {
+      unsubSettings();
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+    };
   }, []);
 
   // Subscribe to live orders for notifications
   useEffect(() => {
+    let prevCount = null;
     const unsub = subscribeToOrders((liveOrders) => {
+      // Flash notification for new orders
+      if (prevCount !== null && liveOrders.length > prevCount) {
+        const newest = liveOrders[0];
+        setNewOrderFlash(newest);
+        
+        // Play bell chime sound
+        try {
+          const audio = bellRef.current;
+          if (audio) {
+            audio.currentTime = 0;
+            audio.volume = 1.0;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(error => {
+                console.error("Playback failed:", error);
+              });
+            }
+          }
+        } catch (_) {}
+        
+        setTimeout(() => setNewOrderFlash(null), 10000);
+      }
+      prevCount = liveOrders.length;
       const active = liveOrders.filter(o => o.status !== 'Completed');
       setActiveOrders(active);
     });
@@ -163,7 +219,6 @@ export default function AdminLayout({ onLogout }) {
       icon: History,
       desc: "Past days records",
     },
-    // { name: 'Settings', path: '/admin/settings', icon: Settings, desc: 'Account preferences' },
   ];
 
   const handleLogout = async () => {
@@ -682,6 +737,28 @@ export default function AdminLayout({ onLogout }) {
             <Outlet />
           </div>
         </div>
+
+        {/* Global New Order Flash */}
+        {newOrderFlash && (
+          <div className="order-flash-notification" onClick={() => {
+            setNewOrderFlash(null);
+            navigate('/admin/orders');
+          }} style={{ cursor: 'pointer' }}>
+            <div className="order-flash-timer-bar" />
+            <div className="order-flash-icon-wrap">
+              <Bell size={22} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p className="order-flash-title">
+                🔔 New Order for {tableNames[newOrderFlash.table] || `Table ${newOrderFlash.table}`}!
+              </p>
+              <p className="order-flash-desc">
+                {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}
+              </p>
+            </div>
+            <ChevronRight size={18} style={{ opacity: 0.3 }} />
+          </div>
+        )}
       </main>
 
       {/* Styles for animations and scrollbars */}
@@ -740,6 +817,69 @@ export default function AdminLayout({ onLogout }) {
             border-radius: 24px;
             margin: 0;
           }
+        }
+
+        .order-flash-notification {
+          position: fixed;
+          top: 1.5rem;
+          right: 1.5rem;
+          z-index: 5000;
+          width: calc(100% - 3rem);
+          max-width: 24rem;
+          overflow: hidden;
+          background-color: #ffffff;
+          border: 1px solid #f3f4f6;
+          border-radius: 1.25rem;
+          padding: 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          animation: toast-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes toast-slide-in {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+
+        .order-flash-timer-bar {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          height: 3px;
+          background-color: #AD4928;
+          animation: timer-shrink 10s linear forwards;
+        }
+
+        @keyframes timer-shrink {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+
+        .order-flash-icon-wrap {
+          flex-shrink: 0;
+          width: 44px;
+          height: 44px;
+          background-color: #fdf2ed;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #AD4928;
+        }
+
+        .order-flash-title {
+          font-weight: 700;
+          color: #3d2b1f;
+          font-size: 0.9375rem;
+          margin: 0;
+        }
+
+        .order-flash-desc {
+          color: #9ca3af;
+          font-size: 0.8125rem;
+          margin: 0.25rem 0 0 0;
         }
       `}</style>
     </div>

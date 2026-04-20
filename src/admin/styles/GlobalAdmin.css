@@ -1,0 +1,71 @@
+/* Global Admin Styles (Notifications, Layout, etc.) */
+
+.order-flash-notification {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  width: calc(100% - 3rem);
+  max-width: 24rem;
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: toast-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.order-flash-notification:hover {
+  transform: translateY(-2px);
+  background-color: #fafafa;
+}
+
+@keyframes toast-slide-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.order-flash-timer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background-color: #AD4928;
+  animation: timer-shrink 10s linear forwards;
+}
+
+@keyframes timer-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.order-flash-icon-wrap {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background-color: #fdf2ed;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AD4928;
+}
+
+.order-flash-title {
+  font-weight: 700;
+  color: #3d2b1f;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.order-flash-desc {
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  margin: 0.25rem 0 0 0;
+}

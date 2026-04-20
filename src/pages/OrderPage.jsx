@@ -98,7 +98,7 @@ const categories = {
       tag: "Zesty",
     },
   ],
-  "Momo & Food": [
+  Food: [
     {
       id: "m1",
       name: "Buff Momo (Steam)",
@@ -205,6 +205,8 @@ export default function OrderPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [lastOrder, setLastOrder] = useState(null);
+  const [cart, setCart] = useState({});
+  const [customerName, setCustomerName] = useState("");
 
   useEffect(() => {
     const unsub = subscribeToShopSettings((settings) => {

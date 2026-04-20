@@ -92,7 +92,7 @@ const categories = {
       tag: "Zesty",
     },
   ],
-  "Momo & Food": [
+  Food: [
     {
       id: "m1",
       name: "Buff Momo",
@@ -166,7 +166,7 @@ export default function Menu() {
   useEffect(() => {
     const unsub = subscribeToShopSettings((settings) => {
       if (settings) {
-        if (typeof settings.isShopOpen === 'boolean') {
+        if (typeof settings.isShopOpen === "boolean") {
           setIsShopOpen(settings.isShopOpen);
         }
         if (settings.tableCount) {
@@ -195,46 +195,52 @@ export default function Menu() {
     <section id="menu" className="section-spacing menu-section relative">
       {/* Table Number Prompt Modal */}
       {showPrompt && (
-        <div 
+        <div
           className="menu-modal-overlay"
           onClick={() => setShowPrompt(false)}
         >
-          <div 
+          <div
             className="menu-modal-content"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="menu-modal-title">Table Number</h3>
-            <p className="menu-modal-desc">Please select the table you are seated at.</p>
-            
+            <p className="menu-modal-desc">
+              Please select the table you are seated at.
+            </p>
+
             <form onSubmit={handleOrderRedirect} className="menu-modal-form">
               <div className="menu-modal-select-wrapper">
-                <select 
+                <select
                   value={tableNum}
                   onChange={(e) => setTableNum(e.target.value)}
                   className="menu-modal-select"
                   required
                 >
-                  <option value="" disabled>Select Table...</option>
-                  {tableOptions.map(num => (
+                  <option value="" disabled>
+                    Select Table...
+                  </option>
+                  {tableOptions.map((num) => (
                     <option key={num} value={num}>
                       {tableNames[num] || `Table ${num}`}
                     </option>
                   ))}
                 </select>
                 <div className="menu-modal-select-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
                 </div>
               </div>
 
               <div className="menu-modal-actions">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPrompt(false)}
                   className="menu-modal-btn-cancel"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={!tableNum}
                   className="menu-modal-btn-submit"
@@ -256,20 +262,33 @@ export default function Menu() {
               Our <br /> <em className="menu-title-italic">Menu</em>
             </h2>
           </div>
-          
+
           <div className="menu-desc-wrapper flex flex-col items-start md:items-end gap-6 mt-6 md:mt-0">
-            <button 
+            <button
               onClick={() => isShopOpen && setShowPrompt(true)}
-              className={`menu-order-btn ${!isShopOpen ? 'opacity-50 cursor-not-allowed bg-gray-400' : ''}`}
+              className={`menu-order-btn ${!isShopOpen ? "opacity-50 cursor-not-allowed bg-gray-400" : ""}`}
               disabled={!isShopOpen}
             >
               {isShopOpen ? (
                 <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
                   Order Now
                 </>
               ) : (
-                'Currently Closed'
+                "Currently Closed"
               )}
             </button>
             <p className="menu-desc text-left md:text-right">

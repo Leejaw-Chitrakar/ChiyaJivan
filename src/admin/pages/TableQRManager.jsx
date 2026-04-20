@@ -156,10 +156,6 @@ export default function TableQRManager() {
       <div className="qr-header">
         <div>
           <h1 className="qr-title">Table QR Codes</h1>
-          <p className="qr-subtitle">
-            Generate scannable QR codes for each table. Customers scan → order →
-            you get notified.
-          </p>
         </div>
         <button onClick={handlePrintAll} className="qr-print-btn">
           <Printer size={18} />

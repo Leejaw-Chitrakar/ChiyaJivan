@@ -167,16 +167,6 @@ export default function Overview() {
         >
           Good Morning, Admin 👋
         </h1>
-        <p
-          style={{
-            fontSize: 16,
-            color: "#9ca3af",
-            fontStyle: "italic",
-            marginTop: 8,
-          }}
-        >
-          Here's a live snapshot of your shop's performance today.
-        </p>
       </div>
 
       <style>{`
@@ -209,8 +199,6 @@ export default function Overview() {
         }
       `}</style>
 
-
-
       {/* ── Stats ── */}
       <div className="overview-stats-wrapper">
         {stats.map((stat) => (
@@ -225,11 +213,12 @@ export default function Overview() {
               display: "flex",
               flexDirection: "column",
               gap: 16,
-              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+              boxShadow:
+                "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
               transition: "transform 0.2s, box-shadow 0.2s",
               minWidth: 0,
               position: "relative",
-              overflow: "hidden"
+              overflow: "hidden",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
@@ -253,14 +242,14 @@ export default function Overview() {
               >
                 <stat.icon size={22} strokeWidth={2.5} />
               </div>
-              <div 
+              <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                style={{ 
-                  background: "#f0fdf4", 
+                style={{
+                  background: "#f0fdf4",
                   border: "1px solid #dcfce7",
                   color: "#16a34a",
                   fontSize: 10,
-                  fontWeight: 700
+                  fontWeight: 700,
                 }}
               >
                 <TrendingUp size={12} />
@@ -274,17 +263,17 @@ export default function Overview() {
                   fontSize: 10,
                   color: "#9ca3af",
                   letterSpacing: "0.05em",
-                  marginBottom: 8
+                  marginBottom: 8,
                 }}
               >
                 {stat.name}
               </p>
               <p
                 className="font-bold"
-                style={{ 
-                  fontSize: "clamp(24px, 6vw, 32px)", 
-                  color: "#3d2b1f", 
-                  lineHeight: 1
+                style={{
+                  fontSize: "clamp(24px, 6vw, 32px)",
+                  color: "#3d2b1f",
+                  lineHeight: 1,
                 }}
               >
                 {stat.value}
@@ -295,10 +284,7 @@ export default function Overview() {
       </div>
 
       {/* ── Orders + Performance ── */}
-      <div
-        id="main-grid"
-        className="main-overview-grid"
-      >
+      <div id="main-grid" className="main-overview-grid">
         {/* Recent Orders */}
         <div
           style={{

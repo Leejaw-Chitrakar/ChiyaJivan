@@ -10,7 +10,10 @@ import {
   Sparkles,
   CheckCircle2,
 } from "lucide-react";
-import { getSocialContent, saveSocialContent } from "../../lib/firestoreService";
+import {
+  getSocialContent,
+  saveSocialContent,
+} from "../../lib/firestoreService";
 import "../styles/SocialManager.css";
 
 export default function SocialManager() {
@@ -44,7 +47,11 @@ export default function SocialManager() {
             email: data.email || "",
           });
           if (data.updatedAt) {
-            setLastPublished(data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt));
+            setLastPublished(
+              data.updatedAt.toDate
+                ? data.updatedAt.toDate()
+                : new Date(data.updatedAt),
+            );
           }
         }
       } catch (err) {
@@ -91,9 +98,6 @@ export default function SocialManager() {
       {/* Header */}
       <div className="social-header">
         <h1>Social & Info Manager</h1>
-        <p>
-          Update your brand story, homepage content, and business details.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -107,9 +111,7 @@ export default function SocialManager() {
                   <Quote size={20} />
                 </div>
                 <div>
-                  <h2 className="social-card-title">
-                    Homepage Content
-                  </h2>
+                  <h2 className="social-card-title">Homepage Content</h2>
                   <p className="social-card-desc">
                     Shown on your public landing page
                   </p>
@@ -117,9 +119,7 @@ export default function SocialManager() {
               </div>
 
               <div className="social-field">
-                <label className="social-field-label">
-                  Daily Ritual Quote
-                </label>
+                <label className="social-field-label">Daily Ritual Quote</label>
                 <textarea
                   rows={2}
                   value={formData.quote}
@@ -134,9 +134,7 @@ export default function SocialManager() {
               </div>
 
               <div className="social-field">
-                <label className="social-field-label">
-                  Our Chiya Story
-                </label>
+                <label className="social-field-label">Our Chiya Story</label>
                 <textarea
                   rows={5}
                   value={formData.story}
@@ -157,9 +155,7 @@ export default function SocialManager() {
                   <Clock size={20} />
                 </div>
                 <div>
-                  <h2 className="social-card-title">
-                    Business Hours
-                  </h2>
+                  <h2 className="social-card-title">Business Hours</h2>
                   <p className="social-card-desc">
                     Displayed in the footer and info section
                   </p>
@@ -167,9 +163,7 @@ export default function SocialManager() {
               </div>
               <div className="social-grid-2">
                 <div className="social-field">
-                  <label className="social-field-label">
-                    Weekdays
-                  </label>
+                  <label className="social-field-label">Weekdays</label>
                   <input
                     type="text"
                     value={formData.weekdays}
@@ -178,9 +172,7 @@ export default function SocialManager() {
                   />
                 </div>
                 <div className="social-field">
-                  <label className="social-field-label">
-                    Weekends
-                  </label>
+                  <label className="social-field-label">Weekends</label>
                   <input
                     type="text"
                     value={formData.weekend}
@@ -201,15 +193,13 @@ export default function SocialManager() {
                   <MapPin size={20} />
                 </div>
                 <div>
-                  <h2 className="social-card-title">
-                    Contact Details
-                  </h2>
+                  <h2 className="social-card-title">Contact Details</h2>
                   <p className="social-card-desc">
                     Visible on landing page footer
                   </p>
                 </div>
               </div>
-              <div className="social-field" style={{ gap: '1.25rem' }}>
+              <div className="social-field" style={{ gap: "1.25rem" }}>
                 {[
                   {
                     field: "address",
@@ -230,7 +220,11 @@ export default function SocialManager() {
                     placeholder: "hello@...",
                   },
                 ].map(({ field, label, icon: Icon, placeholder }) => (
-                  <div key={field} className="social-field" style={{ gap: '0.5rem' }}>
+                  <div
+                    key={field}
+                    className="social-field"
+                    style={{ gap: "0.5rem" }}
+                  >
                     <label className="social-field-label">
                       <Icon size={13} /> {label}
                     </label>
@@ -250,10 +244,16 @@ export default function SocialManager() {
             <div className="social-publish-card">
               <div className="social-publish-content">
                 <div className="social-card-header">
-                  <div className="social-card-icon primary" style={{ padding: '0.5rem' }}>
+                  <div
+                    className="social-card-icon primary"
+                    style={{ padding: "0.5rem" }}
+                  >
                     <Sparkles size={20} />
                   </div>
-                  <h3 className="social-card-title" style={{ fontSize: '1.125rem' }}>
+                  <h3
+                    className="social-card-title"
+                    style={{ fontSize: "1.125rem" }}
+                  >
                     Publish Changes
                   </h3>
                 </div>

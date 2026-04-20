@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { 
-  Calendar, 
-  TrendingUp, 
-  ShoppingBag, 
-  IndianRupee, 
-  ArrowLeft, 
+import {
+  Calendar,
+  TrendingUp,
+  ShoppingBag,
+  IndianRupee,
+  ArrowLeft,
   Search,
   Filter,
   Download,
   Clock,
   User,
-  Coffee
+  Coffee,
 } from "lucide-react";
-import { 
+import {
   getOrdersByDateRange,
-  subscribeToShopSettings 
+  subscribeToShopSettings,
 } from "../../lib/firestoreService";
 import "../styles/History.css";
 
@@ -28,20 +28,21 @@ export default function History() {
     revenue: 0,
     count: 0,
     avg: 0,
-    items: 0
+    items: 0,
   });
 
   const exportToCSV = () => {
     if (orders.length === 0) return;
-    
+
     const headers = ["Date,Table,Items,Total,Status\n"];
-    const rows = orders.map(o => {
+    const rows = orders.map((o) => {
       const date = o.createdAt?.toDate().toLocaleDateString() || "";
       const items = (o.itemsSummary || "").replace(/,/g, " | ");
       return `${date},${o.table},${items},${o.total},${o.status}`;
     });
-    
-    const csvContent = "data:text/csv;charset=utf-8," + headers + rows.join("\n");
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," + headers + rows.join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -51,9 +52,10 @@ export default function History() {
     document.body.removeChild(link);
   };
 
-  const filteredOrders = orders.filter(o => 
-    o.table?.toString().includes(searchTerm) || 
-    o.itemsSummary?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOrders = orders.filter(
+    (o) =>
+      o.table?.toString().includes(searchTerm) ||
+      o.itemsSummary?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   useEffect(() => {
@@ -91,15 +93,20 @@ export default function History() {
     }
 
     const data = await getOrdersByDateRange(start, end);
-    const completedOrders = data.filter(o => o.status === "Completed" || o.status === "Served");
-    
+    const completedOrders = data.filter(
+      (o) => o.status === "Completed" || o.status === "Served",
+    );
+
     // Calculate stats
-    const revenue = completedOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const revenue = completedOrders.reduce(
+      (sum, o) => sum + (Number(o.total) || 0),
+      0,
+    );
     const count = completedOrders.length;
     const avg = count > 0 ? Math.round(revenue / count) : 0;
     const items = completedOrders.reduce((sum, o) => {
-        // Assuming items is an array or string summary
-        return sum + (o.items?.length || 0);
+      // Assuming items is an array or string summary
+      return sum + (o.items?.length || 0);
     }, 0);
 
     setOrders(data);
@@ -110,12 +117,12 @@ export default function History() {
   const formatDate = (ts) => {
     if (!ts) return "—";
     const date = ts.toDate();
-    return date.toLocaleDateString('en-IN', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -123,32 +130,33 @@ export default function History() {
     <div className="history-container">
       {/* ── Header ── */}
       <div className="history-header">
-        <p className="font-bold uppercase tracking-widest text-[#AD4928] text-[10px] mb-1">Performance Archive</p>
+        <p className="font-bold uppercase tracking-widest text-[#AD4928] text-[10px] mb-1">
+          Performance Archive
+        </p>
         <h1 className="history-title">Sales History</h1>
-        <p className="history-subtitle">Review your past performance and order insights.</p>
       </div>
-          {/* ── Filters & Export ── */}
+      {/* ── Filters & Export ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="filter-bar no-scrollbar">
-          <button 
+          <button
             onClick={() => setFilterType("today")}
             className={`filter-btn ${filterType === "today" ? "filter-btn-active" : "filter-btn-inactive"}`}
           >
             Today
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("yesterday")}
             className={`filter-btn ${filterType === "yesterday" ? "filter-btn-active" : "filter-btn-inactive"}`}
           >
             Yesterday
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("7days")}
             className={`filter-btn ${filterType === "7days" ? "filter-btn-active" : "filter-btn-inactive"}`}
           >
             Last 7 Days
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("all")}
             className={`filter-btn ${filterType === "all" ? "filter-btn-active" : "filter-btn-inactive"}`}
           >
@@ -156,7 +164,7 @@ export default function History() {
           </button>
         </div>
 
-        <button 
+        <button
           onClick={exportToCSV}
           className="history-export-btn active:scale-95 transition-all"
         >
@@ -213,13 +221,19 @@ export default function History() {
         <div className="list-header gap-6 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-6 bg-[#AD4928] rounded-full"></div>
-            <h3 className="font-bold text-[#3D2B1F] text-xl">Order History Logs</h3>
+            <h3 className="font-bold text-[#3D2B1F] text-xl">
+              Order History Logs
+            </h3>
           </div>
           <div className="relative flex-1 max-w-lg">
-            <Search 
-              className="absolute text-gray-400" 
-              size={20} 
-              style={{ left: "18px", top: "50%", transform: "translateY(-50%)" }}
+            <Search
+              className="absolute text-gray-400"
+              size={20}
+              style={{
+                left: "18px",
+                top: "50%",
+                transform: "translateY(-50%)",
+              }}
             />
             <input
               type="text"
@@ -240,7 +254,9 @@ export default function History() {
           <div className="py-20 text-center">
             <p className="text-4xl mb-4">📜</p>
             <p className="font-bold text-gray-800">No records found</p>
-            <p className="text-gray-400 text-sm mt-1">Adjust your filters to see more orders.</p>
+            <p className="text-gray-400 text-sm mt-1">
+              Adjust your filters to see more orders.
+            </p>
           </div>
         ) : (
           <>
@@ -257,16 +273,26 @@ export default function History() {
               <tbody>
                 {filteredOrders.map((order) => (
                   <tr key={order.id}>
-                    <td className="font-medium">{formatDate(order.createdAt)}</td>
+                    <td className="font-medium">
+                      {formatDate(order.createdAt)}
+                    </td>
                     <td>
                       <span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold">
-                        {order.tableName || tableNames[order.table] || `Table ${order.table}`}
+                        {order.tableName ||
+                          tableNames[order.table] ||
+                          `Table ${order.table}`}
                       </span>
                     </td>
-                    <td className="max-w-xs truncate text-gray-500">{order.itemsSummary || "—"}</td>
-                    <td className="font-bold text-[#3D2B1F]">Rs. {order.total}</td>
+                    <td className="max-w-xs truncate text-gray-500">
+                      {order.itemsSummary || "—"}
+                    </td>
+                    <td className="font-bold text-[#3D2B1F]">
+                      Rs. {order.total}
+                    </td>
                     <td>
-                      <span className={`status-badge ${order.status === 'Completed' || order.status === 'Served' ? 'status-completed' : 'status-pending'}`}>
+                      <span
+                        className={`status-badge ${order.status === "Completed" || order.status === "Served" ? "status-completed" : "status-pending"}`}
+                      >
                         {order.status}
                       </span>
                     </td>
@@ -281,19 +307,27 @@ export default function History() {
                 <div key={order.id} className="mobile-history-card">
                   <div className="mobile-row">
                     <span className="font-bold text-[#AD4928]">
-                      {order.tableName || tableNames[order.table] || `Table ${order.table}`}
+                      {order.tableName ||
+                        tableNames[order.table] ||
+                        `Table ${order.table}`}
                     </span>
-                    <span className={`status-badge ${order.status === 'Completed' || order.status === 'Served' ? 'status-completed' : 'status-pending'}`}>
+                    <span
+                      className={`status-badge ${order.status === "Completed" || order.status === "Served" ? "status-completed" : "status-pending"}`}
+                    >
                       {order.status}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-[#9CA3AF] text-xs">
                     <Clock size={12} /> {formatDate(order.createdAt)}
                   </div>
-                  <p className="text-sm text-gray-600">{order.itemsSummary || "—"}</p>
+                  <p className="text-sm text-gray-600">
+                    {order.itemsSummary || "—"}
+                  </p>
                   <div className="mobile-row border-t border-gray-100 pt-3 mt-1">
                     <span className="mobile-label">Total Amount</span>
-                    <span className="font-bold text-lg text-[#3D2B1F]">Rs. {order.total}</span>
+                    <span className="font-bold text-lg text-[#3D2B1F]">
+                      Rs. {order.total}
+                    </span>
                   </div>
                 </div>
               ))}
