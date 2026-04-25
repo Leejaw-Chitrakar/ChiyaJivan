@@ -23,6 +23,7 @@ import {
   subscribeToOrders,
   subscribeToAdminProfile,
 } from "../../lib/firestoreService";
+import SEO from "../../components/SEO";
 import "../styles/GlobalAdmin.css";
 
 function timeAgo(timestamp) {
@@ -255,7 +256,9 @@ export default function AdminLayout({ onLogout }) {
   };
 
   return (
-    <div
+    <>
+      <SEO title="Admin Dashboard" />
+      <div
       className="flex overflow-hidden"
       style={{
         height: "100vh",
@@ -1106,5 +1109,6 @@ export default function AdminLayout({ onLogout }) {
         }
       `}</style>
     </div>
+    </>
   );
 }

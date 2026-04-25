@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import SEO from "../components/SEO";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import {
@@ -406,6 +407,10 @@ export default function OrderPage() {
       className="order-page"
       style={cartCount > 0 ? { paddingBottom: 420 } : undefined}
     >
+      <SEO 
+        title={`Order - ${currentTableName}`} 
+        description={`Place your order at Chiya Jivan from ${currentTableName}. Enjoy our handcrafted Himalayan teas and local snacks.`}
+      />
       {/* Top Bar */}
       <header className="order-header">
         <div
