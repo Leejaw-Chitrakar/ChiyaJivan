@@ -484,3 +484,50 @@
   background-color: #963c1e;
   transform: translateY(-2px);
 }
+
+/* Table Grid Options */
+.menu-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+/* Scrollbar styles for the grid */
+.menu-modal-grid::-webkit-scrollbar {
+  width: 6px;
+}
+.menu-modal-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.menu-modal-grid::-webkit-scrollbar-thumb {
+  background-color: #d2c5b8;
+  border-radius: 10px;
+}
+
+.menu-modal-grid-btn {
+  padding: 0.75rem 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d2c5b8;
+  background-color: white;
+  color: var(--color-bark, #3d2b1f);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.menu-modal-grid-btn:hover {
+  background-color: #fdf2ed;
+  border-color: #AD4928;
+}
+
+.menu-modal-grid-btn.active {
+  background-color: var(--color-terracotta, #AD4928);
+  color: white;
+  border-color: var(--color-terracotta, #AD4928);
+  box-shadow: 0 4px 10px rgba(173, 73, 40, 0.25);
+}

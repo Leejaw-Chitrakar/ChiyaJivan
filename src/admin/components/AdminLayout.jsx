@@ -17,17 +17,24 @@ import {
   X,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
-import { subscribeToShopSettings, saveShopSettings, subscribeToOrders } from "../../lib/firestoreService";
+import {
+  subscribeToShopSettings,
+  saveShopSettings,
+  subscribeToOrders,
+  subscribeToAdminProfile,
+} from "../../lib/firestoreService";
 import "../styles/GlobalAdmin.css";
 
 function timeAgo(timestamp) {
-  if (!timestamp) return 'just now';
-  const seconds = Math.floor((Date.now() - timestamp.toDate().getTime()) / 1000);
-  if (seconds < 60) return 'just now';
+  if (!timestamp) return "just now";
+  const seconds = Math.floor(
+    (Date.now() - timestamp.toDate().getTime()) / 1000,
+  );
+  if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+  if (minutes < 60) return `${minutes} min${minutes > 1 ? "s" : ""} ago`;
   const hours = Math.floor(minutes / 60);
-  return `${hours} hr${hours > 1 ? 's' : ''} ago`;
+  return `${hours} hr${hours > 1 ? "s" : ""} ago`;
 }
 
 export default function AdminLayout({ onLogout }) {
@@ -40,8 +47,10 @@ export default function AdminLayout({ onLogout }) {
   const [activeOrders, setActiveOrders] = useState([]);
   const [newOrderFlash, setNewOrderFlash] = useState(null);
   const [tableNames, setTableNames] = useState({});
+  const [profileOpen, setProfileOpen] = useState(false);
   const bellRef = useRef(null);
   const notifRef = useRef(null);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,13 +67,21 @@ export default function AdminLayout({ onLogout }) {
       }
     });
 
-    // Set admin face
+    // Set admin face from Auth initially, then sync with Firestore profile
     if (auth.currentUser) {
       const email = auth.currentUser.email || "Admin User";
       const name = email.split("@")[0];
       setAdminName(name);
       setAdminLetter(name.charAt(0).toUpperCase());
     }
+
+    // Subscribe to admin profile
+    const unsubProfile = subscribeToAdminProfile((profile) => {
+      if (profile && profile.displayName) {
+        setAdminName(profile.displayName);
+        setAdminLetter(profile.displayName.charAt(0).toUpperCase());
+      }
+    });
 
     // Pre-load bell chime & unlock browser autoplay
     const audio = new Audio("/bell-chime.mp3");
@@ -74,13 +91,14 @@ export default function AdminLayout({ onLogout }) {
 
     const unlock = () => {
       // First play to unlock, then reset
-      audio.play()
+      audio
+        .play()
         .then(() => {
           audio.pause();
           audio.currentTime = 0;
         })
-        .catch(err => console.log("Audio unlock failed:", err));
-      
+        .catch((err) => console.log("Audio unlock failed:", err));
+
       document.removeEventListener("click", unlock);
       document.removeEventListener("touchstart", unlock);
     };
@@ -89,6 +107,7 @@ export default function AdminLayout({ onLogout }) {
 
     return () => {
       unsubSettings();
+      unsubProfile();
       document.removeEventListener("click", unlock);
       document.removeEventListener("touchstart", unlock);
     };
@@ -102,7 +121,7 @@ export default function AdminLayout({ onLogout }) {
       if (prevCount !== null && liveOrders.length > prevCount) {
         const newest = liveOrders[0];
         setNewOrderFlash(newest);
-        
+
         // Play bell chime sound
         try {
           const audio = bellRef.current;
@@ -111,31 +130,34 @@ export default function AdminLayout({ onLogout }) {
             audio.volume = 1.0;
             const playPromise = audio.play();
             if (playPromise !== undefined) {
-              playPromise.catch(error => {
+              playPromise.catch((error) => {
                 console.error("Playback failed:", error);
               });
             }
           }
         } catch (_) {}
-        
+
         setTimeout(() => setNewOrderFlash(null), 10000);
       }
       prevCount = liveOrders.length;
-      const active = liveOrders.filter(o => o.status !== 'Completed');
+      const active = liveOrders.filter((o) => o.status !== "Completed");
       setActiveOrders(active);
     });
     return () => unsub();
   }, []);
 
-  // Close notif dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false);
       }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Pseudo-cron for Auto Schedule
@@ -208,16 +230,22 @@ export default function AdminLayout({ onLogout }) {
       desc: "Generate & print QRs",
     },
     {
+      name: "Sales History",
+      path: "/admin/history",
+      icon: History,
+      desc: "Past days records",
+    },
+    {
       name: "Social & Updates",
       path: "/admin/social",
       icon: Share2,
       desc: "Content & hours",
     },
     {
-      name: "Sales History",
-      path: "/admin/history",
-      icon: History,
-      desc: "Past days records",
+      name: "Global Settings",
+      path: "/admin/settings",
+      icon: Settings,
+      desc: "System & safety controls",
     },
   ];
 
@@ -537,10 +565,17 @@ export default function AdminLayout({ onLogout }) {
 
             <div style={{ width: 1, height: 28, background: "#f3f4f6" }} />
 
-            <div ref={notifRef} style={{ position: 'relative' }}>
+            <div ref={notifRef} style={{ position: "relative" }}>
               <button
                 className="relative transition-colors"
-                style={{ padding: 10, borderRadius: 12, color: notifOpen ? '#AD4928' : '#9ca3af', background: notifOpen ? 'rgba(173,73,40,0.08)' : 'transparent' }}
+                style={{
+                  padding: 10,
+                  borderRadius: 12,
+                  color: notifOpen ? "#AD4928" : "#9ca3af",
+                  background: notifOpen
+                    ? "rgba(173,73,40,0.08)"
+                    : "transparent",
+                }}
                 onClick={() => setNotifOpen(!notifOpen)}
               >
                 <Bell size={20} />
@@ -555,13 +590,13 @@ export default function AdminLayout({ onLogout }) {
                       borderRadius: 999,
                       background: "#AD4928",
                       border: "2px solid #FDFBF7",
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       fontSize: 10,
                       fontWeight: 800,
-                      color: '#fff',
-                      padding: '0 4px',
+                      color: "#fff",
+                      padding: "0 4px",
                     }}
                   >
                     {activeOrders.length}
@@ -573,79 +608,172 @@ export default function AdminLayout({ onLogout }) {
               {notifOpen && (
                 <div className="notif-dropdown">
                   {/* Dropdown Header */}
-                  <div style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}>
+                  <div
+                    style={{
+                      padding: "16px 20px",
+                      borderBottom: "1px solid #f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <div>
-                      <p className="font-bold" style={{ fontSize: 15, color: '#3d2b1f' }}>Notifications</p>
-                      <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{activeOrders.length} active order{activeOrders.length !== 1 ? 's' : ''}</p>
+                      <p
+                        className="font-bold"
+                        style={{ fontSize: 15, color: "#3d2b1f" }}
+                      >
+                        Notifications
+                      </p>
+                      <p
+                        style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}
+                      >
+                        {activeOrders.length} active order
+                        {activeOrders.length !== 1 ? "s" : ""}
+                      </p>
                     </div>
                     <button
                       onClick={() => setNotifOpen(false)}
-                      style={{ padding: 6, borderRadius: 8, background: '#f9fafb', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                      style={{
+                        padding: 6,
+                        borderRadius: 8,
+                        background: "#f9fafb",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#9ca3af",
+                      }}
                     >
                       <X size={14} />
                     </button>
                   </div>
 
                   {/* Dropdown Body */}
-                  <div style={{ flex: 1, overflowY: 'auto', maxHeight: 320 }}>
+                  <div style={{ flex: 1, overflowY: "auto", maxHeight: 320 }}>
                     {activeOrders.length === 0 ? (
-                      <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                      <div
+                        style={{ padding: "40px 20px", textAlign: "center" }}
+                      >
                         <p style={{ fontSize: 28, marginBottom: 8 }}>🔔</p>
-                        <p className="font-bold" style={{ fontSize: 14, color: '#3d2b1f' }}>All caught up!</p>
-                        <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic', marginTop: 4 }}>No pending orders right now.</p>
+                        <p
+                          className="font-bold"
+                          style={{ fontSize: 14, color: "#3d2b1f" }}
+                        >
+                          All caught up!
+                        </p>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            color: "#9ca3af",
+                            fontStyle: "italic",
+                            marginTop: 4,
+                          }}
+                        >
+                          No pending orders right now.
+                        </p>
                       </div>
                     ) : (
                       activeOrders.slice(0, 10).map((order, i) => {
                         const statusColor = {
-                          Pending: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-                          Preparing: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-                          Served: { bg: '#f5f3ff', color: '#7c3aed', border: '#ede9fe' },
+                          Pending: {
+                            bg: "#fffbeb",
+                            color: "#d97706",
+                            border: "#fde68a",
+                          },
+                          Preparing: {
+                            bg: "#eff6ff",
+                            color: "#2563eb",
+                            border: "#bfdbfe",
+                          },
+                          Served: {
+                            bg: "#f5f3ff",
+                            color: "#7c3aed",
+                            border: "#ede9fe",
+                          },
                         };
-                        const sc = statusColor[order.status] || statusColor.Pending;
+                        const sc =
+                          statusColor[order.status] || statusColor.Pending;
                         return (
                           <div
                             key={order.id}
                             style={{
-                              padding: '14px 20px',
-                              borderBottom: i < Math.min(activeOrders.length, 10) - 1 ? '1px solid #fafafa' : 'none',
-                              cursor: 'pointer',
-                              transition: 'background 0.15s',
+                              padding: "14px 20px",
+                              borderBottom:
+                                i < Math.min(activeOrders.length, 10) - 1
+                                  ? "1px solid #fafafa"
+                                  : "none",
+                              cursor: "pointer",
+                              transition: "background 0.15s",
                             }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.015)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.background =
+                                "rgba(0,0,0,0.015)")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.background = "transparent")
+                            }
                             onClick={() => {
                               setNotifOpen(false);
-                              navigate('/admin/orders');
+                              navigate("/admin/orders");
                             }}
                           >
-                            <div className="flex items-center" style={{ gap: 8, marginBottom: 4 }}>
-                              <span className="font-bold" style={{ fontSize: 13, color: '#AD4928' }}>Table {order.table}</span>
-                              <span className="font-bold uppercase" style={{
-                                fontSize: 9,
-                                letterSpacing: '0.06em',
-                                padding: '2px 8px',
-                                borderRadius: 999,
-                                background: sc.bg,
-                                color: sc.color,
-                                border: `1px solid ${sc.border}`,
-                              }}>
+                            <div
+                              className="flex items-center"
+                              style={{ gap: 8, marginBottom: 4 }}
+                            >
+                              <span
+                                className="font-bold"
+                                style={{ fontSize: 13, color: "#AD4928" }}
+                              >
+                                Table {order.table}
+                              </span>
+                              <span
+                                className="font-bold uppercase"
+                                style={{
+                                  fontSize: 9,
+                                  letterSpacing: "0.06em",
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  background: sc.bg,
+                                  color: sc.color,
+                                  border: `1px solid ${sc.border}`,
+                                }}
+                              >
                                 {order.status}
                               </span>
                             </div>
-                            <p style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {order.itemsSummary || '—'}
+                            <p
+                              style={{
+                                fontSize: 12,
+                                color: "#6b7280",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {order.itemsSummary || "—"}
                             </p>
-                            <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
-                              <span className="font-bold" style={{ fontSize: 12, color: '#3d2b1f' }}>Rs. {order.total}</span>
-                              <span style={{ fontSize: 11, color: '#d1d5db' }}>·</span>
-                              <span className="flex items-center" style={{ fontSize: 11, color: '#9ca3af', gap: 3 }}>
-                                <Clock size={10} />{timeAgo(order.createdAt)}
+                            <div
+                              className="flex items-center"
+                              style={{ gap: 8, marginTop: 4 }}
+                            >
+                              <span
+                                className="font-bold"
+                                style={{ fontSize: 12, color: "#3d2b1f" }}
+                              >
+                                Rs. {order.total}
+                              </span>
+                              <span style={{ fontSize: 11, color: "#d1d5db" }}>
+                                ·
+                              </span>
+                              <span
+                                className="flex items-center"
+                                style={{
+                                  fontSize: 11,
+                                  color: "#9ca3af",
+                                  gap: 3,
+                                }}
+                              >
+                                <Clock size={10} />
+                                {timeAgo(order.createdAt)}
                               </span>
                             </div>
                           </div>
@@ -656,26 +784,35 @@ export default function AdminLayout({ onLogout }) {
 
                   {/* Dropdown Footer */}
                   {activeOrders.length > 0 && (
-                    <div style={{ padding: '12px 20px', borderTop: '1px solid #f3f4f6' }}>
+                    <div
+                      style={{
+                        padding: "12px 20px",
+                        borderTop: "1px solid #f3f4f6",
+                      }}
+                    >
                       <button
                         onClick={() => {
                           setNotifOpen(false);
-                          navigate('/admin/orders');
+                          navigate("/admin/orders");
                         }}
                         className="font-bold"
                         style={{
-                          width: '100%',
-                          padding: '10px',
+                          width: "100%",
+                          padding: "10px",
                           borderRadius: 12,
                           fontSize: 13,
-                          background: '#AD4928',
-                          color: '#fff',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.15s',
+                          background: "#AD4928",
+                          color: "#fff",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "background 0.15s",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#8f3d21'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#AD4928'}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "#8f3d21")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "#AD4928")
+                        }
                       >
                         View All Orders →
                       </button>
@@ -686,8 +823,10 @@ export default function AdminLayout({ onLogout }) {
             </div>
 
             <div
-              className="flex items-center"
+              ref={profileRef}
+              className="flex items-center relative cursor-pointer"
               style={{ gap: 14, paddingLeft: 4 }}
+              onClick={() => setProfileOpen(!profileOpen)}
             >
               <div className="text-right hidden sm:block">
                 <p
@@ -724,6 +863,83 @@ export default function AdminLayout({ onLogout }) {
               >
                 {adminLetter}
               </div>
+
+              {profileOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 12px)",
+                    right: 0,
+                    width: 220,
+                    background: "#fff",
+                    borderRadius: 16,
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+                    border: "1px solid #f3f4f6",
+                    zIndex: 100,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "16px", borderBottom: "1px solid #f3f4f6" }}>
+                    <p style={{ fontSize: 14, fontWeight: "bold", color: "#3d2b1f" }}>{adminName}</p>
+                    <p style={{ fontSize: 12, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis" }}>{auth.currentUser?.email || "admin@example.com"}</p>
+                  </div>
+                  <div style={{ padding: 8 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProfileOpen(false);
+                        navigate("/admin/settings");
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#4b5563",
+                        textAlign: "left",
+                        transition: "background 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <Settings size={16} /> Global Settings
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onLogout();
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#ef4444",
+                        textAlign: "left",
+                        transition: "background 0.2s"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <LogOut size={16} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -740,17 +956,24 @@ export default function AdminLayout({ onLogout }) {
 
         {/* Global New Order Flash */}
         {newOrderFlash && (
-          <div className="order-flash-notification" onClick={() => {
-            setNewOrderFlash(null);
-            navigate('/admin/orders');
-          }} style={{ cursor: 'pointer' }}>
+          <div
+            className="order-flash-notification"
+            onClick={() => {
+              setNewOrderFlash(null);
+              navigate("/admin/orders");
+            }}
+            style={{ cursor: "pointer" }}
+          >
             <div className="order-flash-timer-bar" />
             <div className="order-flash-icon-wrap">
               <Bell size={22} />
             </div>
             <div style={{ flex: 1 }}>
               <p className="order-flash-title">
-                🔔 New Order for {tableNames[newOrderFlash.table] || `Table ${newOrderFlash.table}`}!
+                🔔 New Order for{" "}
+                {tableNames[newOrderFlash.table] ||
+                  `Table ${newOrderFlash.table}`}
+                !
               </p>
               <p className="order-flash-desc">
                 {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}

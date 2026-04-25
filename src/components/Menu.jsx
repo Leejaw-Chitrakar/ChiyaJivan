@@ -209,27 +209,20 @@ export default function Menu() {
             </p>
 
             <form onSubmit={handleOrderRedirect} className="menu-modal-form">
-              <div className="menu-modal-select-wrapper">
-                <select
-                  value={tableNum}
-                  onChange={(e) => setTableNum(e.target.value)}
-                  className="menu-modal-select"
-                  required
-                >
-                  <option value="" disabled>
-                    Select Table...
-                  </option>
-                  {tableOptions.map((num) => (
-                    <option key={num} value={num}>
+              <div className="menu-modal-grid">
+                {tableOptions.map((num) => {
+                  const val = num.toString();
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setTableNum(val)}
+                      className={`menu-modal-grid-btn ${tableNum === val ? "active" : ""}`}
+                    >
                       {tableNames[num] || `Table ${num}`}
-                    </option>
-                  ))}
-                </select>
-                <div className="menu-modal-select-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                  </svg>
-                </div>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="menu-modal-actions">

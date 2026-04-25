@@ -208,11 +208,14 @@ export default function OrderPage() {
   const [cart, setCart] = useState({});
   const [customerName, setCustomerName] = useState("");
 
+  const [isSiteDown, setIsSiteDown] = useState(false);
+
   useEffect(() => {
     const unsub = subscribeToShopSettings((settings) => {
       if (settings) {
         if (settings.tableCount) setTableCount(settings.tableCount);
         if (settings.tableNames) setTableNames(settings.tableNames);
+        if (settings.isSiteDown !== undefined) setIsSiteDown(settings.isSiteDown);
       }
     });
     return () => unsub();
@@ -288,6 +291,18 @@ export default function OrderPage() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  if (isSiteDown) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FDFBF7', color: '#3d2b1f', textAlign: 'center', padding: '20px' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>☕</div>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>We'll be back soon!</h1>
+        <p style={{ fontSize: '1.2rem', color: '#6b7280', maxWidth: '500px', lineHeight: '1.6' }}>
+          Chiya Jivan is currently under maintenance. Online ordering is temporarily disabled. We will be back online shortly!
+        </p>
+      </div>
+    );
+  }
 
   // Order success screen
   if (orderPlaced && lastOrder) {

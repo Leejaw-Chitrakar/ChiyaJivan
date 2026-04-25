@@ -22,8 +22,9 @@ import { db } from "./firebase";
 // ─── COLLECTION REFS ────────────────────────────────────────────────────────
 const menuCol     = collection(db, "menu");
 const ordersCol   = collection(db, "orders");
-const settingsDoc = doc(db, "config", "shopSettings");
-const socialDoc   = doc(db, "config", "socialContent");
+const settingsDoc    = doc(db, "config", "shopSettings");
+const socialDoc      = doc(db, "config", "socialContent");
+const adminProfileDoc = doc(db, "config", "adminProfile");
 
 // ─── MENU ────────────────────────────────────────────────────────────────────
 
@@ -159,4 +160,24 @@ export function subscribeToSocialContent(callback) {
 /** Save social content */
 export async function saveSocialContent(content) {
   return await setDoc(socialDoc, { ...content, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+// ─── ADMIN PROFILE ──────────────────────────────────────────────────────────
+
+/** Get admin profile (display name, contact email) */
+export async function getAdminProfile() {
+  const snap = await getDoc(adminProfileDoc);
+  return snap.exists() ? snap.data() : null;
+}
+
+/** Subscribe to admin profile in real-time */
+export function subscribeToAdminProfile(callback) {
+  return onSnapshot(adminProfileDoc, (snap) => {
+    callback(snap.exists() ? snap.data() : null);
+  });
+}
+
+/** Save admin profile */
+export async function saveAdminProfile(profile) {
+  return await setDoc(adminProfileDoc, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
 }
