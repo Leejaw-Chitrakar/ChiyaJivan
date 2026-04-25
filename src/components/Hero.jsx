@@ -31,7 +31,7 @@ export default function Hero() {
       <div className="hero-background">
         <img
           src="/hero_chiya.png"
-          alt="Atmospheric Tea Scene"
+          alt="Traditional Nepali Milk Masala Tea being served at Chiya Jivan Cafe"
           className="hero-bg-img"
         />
         <div className="hero-overlay-dark" />
