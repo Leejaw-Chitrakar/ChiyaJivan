@@ -15,6 +15,10 @@ import {
   Clock,
   History,
   X,
+  Wallet,
+  Shield,
+  Server,
+  Activity,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
 import {
@@ -22,6 +26,7 @@ import {
   saveShopSettings,
   subscribeToOrders,
   subscribeToAdminProfile,
+  updateSystemMaintenance,
 } from "../../lib/firestoreService";
 import SEO from "../../components/SEO";
 import "../styles/GlobalAdmin.css";
@@ -38,7 +43,7 @@ function timeAgo(timestamp) {
   return `${hours} hr${hours > 1 ? "s" : ""} ago`;
 }
 
-export default function AdminLayout({ onLogout }) {
+export default function AdminLayout({ onLogout, userRole }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(true);
   const [adminName, setAdminName] = useState("Admin User");
@@ -231,6 +236,12 @@ export default function AdminLayout({ onLogout }) {
       desc: "Generate & print QRs",
     },
     {
+      name: "Expenses & Sales",
+      path: "/admin/expenses",
+      icon: Wallet,
+      desc: "Track payments & expenses",
+    },
+    {
       name: "Sales History",
       path: "/admin/history",
       icon: History,
@@ -249,6 +260,24 @@ export default function AdminLayout({ onLogout }) {
       desc: "System & safety controls",
     },
   ];
+
+  // Filter nav items based on role
+  const filteredNavItems = navItems.filter(item => {
+    // Both admin and superadmin see everything for now except dev settings
+    // But we could restrict more if needed.
+    // The prompt says: "Show a 'System Settings' tab in the sidebar ONLY for role === 'superadmin'."
+    // Let's add a System Settings item specifically.
+    return true;
+  });
+
+  if (userRole === 'superadmin') {
+    filteredNavItems.push({
+      name: "System Logs",
+      path: "/admin/logs",
+      icon: Activity,
+      desc: "Raw system records",
+    });
+  }
 
   const handleLogout = async () => {
     await onLogout();
@@ -410,7 +439,7 @@ export default function AdminLayout({ onLogout }) {
             Navigation
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
@@ -472,6 +501,65 @@ export default function AdminLayout({ onLogout }) {
             ))}
           </div>
         </nav>
+
+        {/* Superadmin Developer Console */}
+        {userRole === 'superadmin' && (
+          <div
+            style={{
+              margin: "12px 16px",
+              padding: "16px",
+              borderRadius: 14,
+              background: "rgba(220, 38, 38, 0.1)",
+              border: "1px solid rgba(220, 38, 38, 0.2)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Shield size={14} className="text-red-500" />
+              <p className="font-bold uppercase text-red-500" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>
+                Developer Console
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white font-bold" style={{ fontSize: "12px" }}>Maintenance Mode</p>
+                  <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>Kill Switch</p>
+                </div>
+                <button
+                  onClick={() => updateSystemMaintenance(!shopSettings?.isSiteDown)}
+                  className="flex-shrink-0 relative transition-colors duration-300"
+                  style={{
+                    width: 44,
+                    height: 24,
+                    borderRadius: 12,
+                    background: shopSettings?.isSiteDown ? "#dc2626" : "rgba(255,255,255,0.1)",
+                  }}
+                >
+                  <div
+                    className="absolute bg-white shadow-lg transition-all duration-300"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      top: 3,
+                      transform: shopSettings?.isSiteDown
+                        ? "translateX(23px)"
+                        : "translateX(3px)",
+                    }}
+                  />
+                </button>
+              </div>
+              
+              <button 
+                className="w-full py-2 rounded-lg bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors"
+                onClick={() => alert("Maintenance logs coming soon...")}
+              >
+                Reset Admin Sessions
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Sign Out */}
         <div

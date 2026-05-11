@@ -11,10 +11,14 @@ import TableQRManager from "./pages/TableQRManager";
 import SocialManager from "./pages/SocialManager";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
+import Expenses from "./pages/Expenses";
 
 export default function AdminDashboard({ loginOnly = false }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("isAdminAuth") === "true";
+  });
+  const [userRole, setUserRole] = useState(() => {
+    return sessionStorage.getItem("userRole") || "admin";
   });
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
@@ -31,18 +35,23 @@ export default function AdminDashboard({ loginOnly = false }) {
         setIsAuthenticated(true);
         sessionStorage.setItem("isAdminAuth", "true");
         sessionStorage.setItem("adminUid", user.uid);
+        // Refresh role from session or firestore if needed
+        const storedRole = sessionStorage.getItem("userRole");
+        if (storedRole) setUserRole(storedRole);
       } else {
         setIsAuthenticated(false);
         sessionStorage.removeItem("isAdminAuth");
         sessionStorage.removeItem("adminUid");
+        sessionStorage.removeItem("userRole");
       }
       setIsAuthChecking(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = (status) => {
+  const handleLogin = (status, role) => {
     setIsAuthenticated(status);
+    if (role) setUserRole(role);
   };
 
   const handleLogout = async () => {
@@ -73,7 +82,7 @@ export default function AdminDashboard({ loginOnly = false }) {
 
   return (
     <Routes>
-      <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
+      <Route path="/" element={<AdminLayout onLogout={handleLogout} userRole={userRole} />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Overview />} />
         <Route path="menu" element={<MenuManager />} />
@@ -82,6 +91,7 @@ export default function AdminDashboard({ loginOnly = false }) {
         <Route path="social" element={<SocialManager />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="expenses" element={<Expenses />} />
       </Route>
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>

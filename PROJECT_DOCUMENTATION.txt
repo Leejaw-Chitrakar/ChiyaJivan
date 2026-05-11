@@ -1,0 +1,72 @@
+# Chiya Jivan - Admin Dashboard Documentation
+
+## Project Overview
+Chiya Jivan is a modern, real-time restaurant management system designed for efficient order tracking and floor management. The system is built using **React** and **Firebase Firestore**, providing instantaneous updates across all admin devices.
+
+---
+
+## 1. Core Modules
+
+### 🚀 Overview (Floor Status)
+The "Floor Status" is the nerve center of the shop. It provides a bird's-eye view of all tables.
+- **Real-time Occupancy**: Tables turn **Red (Occupied)** automatically when a new order is placed and **White (Free)** when cleared.
+- **Manual Override**: Admins can click any table in the grid to manually toggle its status (e.g., if a customer is just sitting without ordering).
+- **Custom Identification**: Supports custom table names (e.g., "Base Camp") and automatically generates 2-initial shorthand (e.g., "BC") for the grid.
+- **Daily Stats**: Quick summary of today's Revenue, Orders, Served items, and Occupancy percentage.
+
+### 📋 Order Tracking
+A consolidated workflow to move orders from kitchen to table.
+- **Table Grouping**: Multiple orders from the same table are automatically bundled into a single card for easier management.
+- **Workflow Stages**:
+  - **Pending**: New orders awaiting preparation.
+  - **Preparing**: Kitchen has started working on the items.
+  - **Served**: Items have been delivered to the customer.
+  - **Completed**: Payment has been processed.
+- **Smart Actions**: A single dynamic button handles the state transitions for the whole table (e.g., "Start Preparing" -> "Finish & Serve").
+- **Itemized Details**: A compact modal provides a full breakdown of the customer's items, quantities, and individual prices.
+
+### 💰 Payment & Billing
+Streamlined checkout process with flexibility for shop operations.
+- **Bulk Payment**: Pay for all items on a table in one go.
+- **Payment Methods**: Supports "Cash" and "Online" tracking.
+- **Discounts & Notes**: Add optional discounts or internal notes to any transaction.
+- **Post-Payment Occupancy**: A toggle in the payment window lets admins decide if the table becomes "Free" immediately or stays "Occupied" (if customers stay after paying).
+
+---
+
+## 2. Technical Architecture
+
+### Database (Firebase Firestore)
+The system uses a flat schema optimized for real-time performance:
+- **`orders`**: Stores every order item. Filters by `createdAt` to only fetch today's data by default, ensuring high performance.
+- **`shopSettings`**: Stores global configuration including `tableCount`, `tableNames`, and `manualOccupancy` states.
+- **`users`**: Manages roles (`admin`, `superadmin`).
+
+### Key Services (`firestoreService.js`)
+- **`subscribeToOrders`**: Real-time listener for today's orders.
+- **`bulkCompleteTable`**: Atomic update for finishing all orders on a specific table.
+- **`updateTableOccupancy`**: Targeted field updates using Firestore dot notation to preserve global settings while changing specific table statuses.
+
+---
+
+## 3. Operations Guide
+
+### How to set up tables:
+1. Go to **Settings / Table QR Manager**.
+2. Set the total number of tables.
+3. Assign custom names to tables (e.g., Table 1 -> "Terrace").
+4. Names will automatically sync to the Dashboard and Order Tracking.
+
+### How to clear the day:
+The system automatically filters by the current date. However, an admin can use the **"Clear All Orders"** button in the Tracking section to archive/delete today's entries if a fresh start is needed.
+
+---
+
+## 4. Key UI Features
+- **Responsive Grid**: The floor map adjusts from 2 to 6 columns depending on the device screen size.
+- **Status Badges**: Color-coded badges (Orange, Blue, Purple, Green) provide instant visual cues for order urgency.
+- **Micro-Animations**: Pulse effects on new orders to alert the staff immediately.
+
+---
+*Documentation Version: 1.2*
+*Last Updated: 2026-05-11*

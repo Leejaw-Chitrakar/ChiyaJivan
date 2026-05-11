@@ -13,7 +13,21 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { subscribeToOrders } from "../../lib/firestoreService";
+import { 
+  subscribeToOrders, 
+  subscribeToShopSettings,
+  updateTableOccupancy
+} from "../../lib/firestoreService";
+
+
+function getInitials(name) {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
 
 function timeAgo(timestamp) {
   if (!timestamp) return "just now";
@@ -31,13 +45,26 @@ export default function Overview() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [tableCount, setTableCount] = useState(10);
+  const [tableNames, setTableNames] = useState({});
+  const [manualOccupancy, setManualOccupancy] = useState({});
 
   // Subscribe to live orders
   useEffect(() => {
     const unsub = subscribeToOrders((liveOrders) => {
       setOrders(liveOrders);
     });
-    return () => unsub();
+    const unsubSettings = subscribeToShopSettings((settings) => {
+      if (settings) {
+        if (settings.tableCount) setTableCount(settings.tableCount);
+        setTableNames(settings.tableNames || {});
+        setManualOccupancy(settings.manualOccupancy || {});
+      }
+    });
+    return () => {
+      unsub();
+      unsubSettings();
+    };
   }, []);
 
   // Derive stats from live data
@@ -48,16 +75,26 @@ export default function Overview() {
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   const preparingCount = orders.filter((o) => o.status === "Preparing").length;
   const servedCount = orders.filter((o) => o.status === "Served").length;
-  const activeCustomers = pendingCount + preparingCount + servedCount;
-
+  
   // Find top seller
-  const itemCounts = {};
-  orders.forEach((o) => {
-    (o.items || []).forEach((item) => {
-      itemCounts[item.name] = (itemCounts[item.name] || 0) + item.qty;
+  const itemCounts = orders.reduce((acc, o) => {
+    (o.items || []).forEach(item => {
+      acc[item.name] = (acc[item.name] || 0) + item.qty;
     });
-  });
-  const topSeller = Object.entries(itemCounts).sort((a, b) => b[1] - a[1])[0];
+    return acc;
+  }, {});
+  
+  const topSeller = Object.entries(itemCounts)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  const isTableOccupied = (id) => {
+    const tableIdStr = String(id);
+    const hasActiveOrders = orders.some(o => String(o.table) === tableIdStr && o.status !== "Completed");
+    const isManuallyBusy = !!manualOccupancy[tableIdStr];
+    return hasActiveOrders || isManuallyBusy;
+  };
+
+  const occupiedTablesRealCount = Array.from({ length: tableCount }).filter((_, i) => isTableOccupied(i + 1)).length;
 
   const stats = [
     {
@@ -88,9 +125,9 @@ export default function Overview() {
       accent: "#10b981",
     },
     {
-      name: "Active Tables",
-      value: String(activeCustomers),
-      change: "Live",
+      name: "Table Occupancy",
+      value: `${occupiedTablesRealCount}/${tableCount}`,
+      change: `${Math.round((occupiedTablesRealCount / tableCount) * 100)}% Full`,
       icon: Users,
       color: "#8b5cf6",
       bg: "#f5f3ff",
@@ -178,7 +215,7 @@ export default function Overview() {
         }
         @media (min-width: 768px) {
           .overview-stats-wrapper {
-            grid-template-columns: repeat(4, 1fr) !important;
+            grid-template-columns: repeat(2, 1fr) !important;
             gap: 20px !important;
           }
         }
@@ -192,95 +229,208 @@ export default function Overview() {
           grid-template-columns: 1fr 360px;
           gap: 24px;
         }
+        .dashboard-top-grid {
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          gap: 24px;
+        }
         @media (max-width: 1024px) {
-          .main-overview-grid {
+          .main-overview-grid, .dashboard-top-grid {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      {/* ── Stats ── */}
-      <div className="overview-stats-wrapper">
-        {stats.map((stat) => (
-          <div
-            key={stat.name}
-            style={{
-              background: "#ffffff",
-              borderRadius: 24,
-              border: "1px solid #f3f4f6",
-              borderTop: `4px solid ${stat.color}`,
-              padding: "24px 20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              boxShadow:
-                "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              minWidth: 0,
-              position: "relative",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "none";
-              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
-            }}
-          >
-            <div className="flex items-center justify-between w-full">
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  background: stat.bg,
-                  color: stat.color,
-                }}
-              >
-                <stat.icon size={22} strokeWidth={2.5} />
+      {/* ── Dashboard Top Section ── */}
+      <div className="dashboard-top-grid">
+        {/* Left Side: Stats Cards */}
+        <div className="overview-stats-wrapper" style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(2, 1fr)", 
+          gap: 16 
+        }}>
+          {stats.map((stat) => (
+            <div
+              key={stat.name}
+              style={{
+                background: "#ffffff",
+                borderRadius: 24,
+                border: "1px solid #f3f4f6",
+                borderTop: `4px solid ${stat.color}`,
+                padding: "24px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                boxShadow:
+                  "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                minWidth: 0,
+                position: "relative",
+                overflow: "hidden",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+              }}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    background: stat.bg,
+                    color: stat.color,
+                  }}
+                >
+                  <stat.icon size={22} strokeWidth={2.5} />
+                </div>
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #dcfce7",
+                    color: "#16a34a",
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                >
+                  <TrendingUp size={12} />
+                  <span>{stat.change}</span>
+                </div>
               </div>
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #dcfce7",
-                  color: "#16a34a",
-                  fontSize: 10,
-                  fontWeight: 700,
-                }}
-              >
-                <TrendingUp size={12} />
-                <span>{stat.change}</span>
+              <div className="text-left w-full mt-2">
+                <p
+                  className="font-bold uppercase"
+                  style={{
+                    fontSize: 10,
+                    color: "#9ca3af",
+                    letterSpacing: "0.05em",
+                    marginBottom: 8,
+                  }}
+                >
+                  {stat.name}
+                </p>
+                <p
+                  className="font-bold"
+                  style={{
+                    fontSize: "clamp(20px, 4vw, 24px)",
+                    color: "#3d2b1f",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {stat.value}
+                </p>
               </div>
             </div>
-            <div className="text-left w-full mt-2">
-              <p
-                className="font-bold uppercase"
-                style={{
-                  fontSize: 10,
-                  color: "#9ca3af",
-                  letterSpacing: "0.05em",
-                  marginBottom: 8,
-                }}
-              >
-                {stat.name}
-              </p>
-              <p
-                className="font-bold"
-                style={{
-                  fontSize: "clamp(24px, 6vw, 32px)",
-                  color: "#3d2b1f",
-                  lineHeight: 1,
-                }}
-              >
-                {stat.value}
-              </p>
+          ))}
+        </div>
+
+        {/* Right Side: Table Occupancy Grid */}
+        <div style={{ 
+          background: "#fff", 
+          padding: "24px", 
+          borderRadius: 24, 
+          border: "1px solid #f3f4f6",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-bold" style={{ fontSize: 16, color: "#3d2b1f" }}>Table Status</h2>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex items-center gap-1.5">
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#AD4928" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase" }}>Occupied</span>
+              </div>
             </div>
           </div>
-        ))}
+
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))", 
+            gap: 10,
+            flex: 1
+          }}>
+            {Array.from({ length: tableCount }, (_, i) => {
+              const tableIdNum = i + 1;
+              const tableIdStr = String(tableIdNum);
+              const name = tableNames[tableIdStr] || tableNames[tableIdNum] || `Table ${tableIdNum}`;
+              const isOccupied = isTableOccupied(tableIdNum);
+              return (
+                <div 
+                  key={tableIdStr}
+                  onClick={async () => {
+                    try {
+                      await updateTableOccupancy(tableIdStr, !isOccupied);
+                    } catch (err) {
+                      console.error("Failed to toggle occupancy:", err);
+                    }
+                  }}
+                  style={{
+                    padding: "12px 8px",
+                    borderRadius: 14,
+                    textAlign: "center",
+                    background: isOccupied ? "rgba(173,73,40,0.08)" : "#f9fafb",
+                    border: `1px solid ${isOccupied ? "rgba(173,73,40,0.2)" : "#e5e7eb"}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    cursor: "pointer"
+                  }}
+                >
+                <div style={{ 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: 12, 
+                  background: isOccupied ? "#AD4928" : "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: isOccupied ? "#fff" : "#9ca3af",
+                  fontSize: 14,
+                  fontWeight: "bold",
+                  boxShadow: isOccupied ? "0 4px 12px rgba(173,73,40,0.2)" : "none",
+                  textAlign: "center",
+                  border: isOccupied ? "none" : "1px solid #e5e7eb"
+                }}>
+                  {getInitials(name)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ 
+                    fontSize: 10, 
+                    fontWeight: 700, 
+                    color: "#3d2b1f",
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: 70,
+                    marginBottom: 2
+                  }}>
+                    {name}
+                  </span>
+                  <span style={{ 
+                    fontSize: 8, 
+                    fontWeight: 800, 
+                    color: isOccupied ? "#AD4928" : "#9ca3af",
+                    textTransform: "uppercase",
+                  }}>
+                    {isOccupied ? "Occupied" : "Free"}
+                  </span>
+                </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* ── Orders + Performance ── */}

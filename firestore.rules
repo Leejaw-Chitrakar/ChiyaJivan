@@ -3,28 +3,63 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Menu and Config 
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData().role == 'superadmin';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getUserData().role == 'admin' || getUserData().role == 'superadmin');
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow write: if isSuperAdmin();
+    }
+
+    // Menu
     match /menu/{menuId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Config documents
     match /config/{configId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      
+      allow update: if isAdmin() && (
+        configId != 'shopSettings' || 
+        request.resource.data.isSiteDown == resource.data.isSiteDown || 
+        isSuperAdmin()
+      );
+      
+      allow create, delete: if isSuperAdmin();
     }
 
     // Orders Collection
     match /orders/{orderId} {
-      // Must be able to create without auth
       allow create: if true;
-      // Admin dashboard reads/updates them
-      allow read, update, delete: if true; // Temporarily allow all to debug!
+      allow read, update: if isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Expenses Collection
+    match /expenses/{expenseId} {
+      allow read, write: if isAdmin();
     }
 
     // Default catch-all
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSuperAdmin();
     }
   }
 }

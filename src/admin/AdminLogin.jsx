@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { Coffee, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { getUserRole } from '../lib/firestoreService';
 import './styles/AdminLogin.css';
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
@@ -22,15 +23,20 @@ export default function AdminLogin({ onLogin }) {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      if (result.user.uid !== ADMIN_UID) {
+      const role = await getUserRole(result.user.uid);
+      
+      if (role === 'visitor') {
         await auth.signOut();
-        setError('Access denied. This account is not authorized.');
+        setError('Permission Denied. You do not have administrative access.');
         setIsSubmitting(false);
         return;
       }
+      
       sessionStorage.setItem('isAdminAuth', 'true');
       sessionStorage.setItem('adminUid', result.user.uid);
-      onLogin(true);
+      sessionStorage.setItem('userRole', role);
+      
+      onLogin(true, role);
       navigate('/admin/dashboard');
     } catch (err) {
       const messages = {

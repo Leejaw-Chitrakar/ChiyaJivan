@@ -15,6 +15,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -25,6 +26,8 @@ const ordersCol   = collection(db, "orders");
 const settingsDoc    = doc(db, "config", "shopSettings");
 const socialDoc      = doc(db, "config", "socialContent");
 const adminProfileDoc = doc(db, "config", "adminProfile");
+const expensesCol    = collection(db, "expenses");
+const usersCol       = collection(db, "users");
 
 // ─── MENU ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +35,14 @@ const adminProfileDoc = doc(db, "config", "adminProfile");
 export async function getMenuItems() {
   const snap = await getDocs(menuCol);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Subscribe to live menu updates */
+export function subscribeToMenuItems(callback) {
+  return onSnapshot(menuCol, (snap) => {
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(items);
+  });
 }
 
 /** Add a new menu item */
@@ -97,9 +108,17 @@ export async function getOrdersByDateRange(startDate, endDate) {
   }
 }
 
-/** Subscribe to live order updates (real-time) */
+/** Subscribe to live order updates (real-time, filtered for today) */
 export function subscribeToOrders(callback) {
-  const q = query(ordersCol, orderBy("createdAt", "desc"));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const q = query(
+    ordersCol, 
+    where("createdAt", ">=", today),
+    orderBy("createdAt", "desc")
+  );
+  
   return onSnapshot(q, (snap) => {
     const orders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     callback(orders);
@@ -114,6 +133,17 @@ export async function addOrder(order) {
 /** Update an order's status */
 export async function updateOrderStatus(id, status) {
   return await updateDoc(doc(ordersCol, id), { status, updatedAt: serverTimestamp() });
+}
+
+/** Update an order's status and payment info */
+export async function updateOrderPaymentAndStatus(id, status, paymentMethod, paymentNote, discountAmount = 0) {
+  return await updateDoc(doc(ordersCol, id), { 
+    status, 
+    paymentMethod, 
+    paymentNote, 
+    discountAmount: parseFloat(discountAmount) || 0,
+    updatedAt: serverTimestamp() 
+  });
 }
 
 /** Clear all orders */
@@ -135,6 +165,23 @@ export function subscribeToShopSettings(callback) {
   return onSnapshot(settingsDoc, (snap) => {
     callback(snap.exists() ? snap.data() : null);
   });
+}
+
+/** Manually set a table's occupancy (for after payment stay) */
+export async function updateTableOccupancy(tableId, isOccupied) {
+  return await updateDoc(settingsDoc, {
+    [`manualOccupancy.${String(tableId)}`]: isOccupied
+  });
+}
+
+/** Bulk complete all orders for a table */
+export async function bulkCompleteTable(orderIds, paymentData) {
+  const promises = orderIds.map(id => updateDoc(doc(ordersCol, id), {
+    ...paymentData,
+    status: "Completed",
+    completedAt: serverTimestamp()
+  }));
+  return Promise.all(promises);
 }
 
 /** Save shop settings */
@@ -181,3 +228,42 @@ export function subscribeToAdminProfile(callback) {
 export async function saveAdminProfile(profile) {
   return await setDoc(adminProfileDoc, { ...profile, updatedAt: serverTimestamp() }, { merge: true });
 }
+
+// ─── RBAC & USER ROLES ───────────────────────────────────────────────────────
+
+/** Fetch user role from Firestore */
+export async function getUserRole(uid) {
+  try {
+    const userDoc = await getDoc(doc(usersCol, uid));
+    if (userDoc.exists()) {
+      return userDoc.data().role || "admin"; // Default to admin if no role set
+    }
+    return "admin"; // Fallback
+  } catch (error) {
+    console.error("Error fetching user role:", error);
+    return "admin";
+  }
+}
+
+/** Set system maintenance status (Kill Switch) */
+export async function updateSystemMaintenance(isSiteDown) {
+  return await updateDoc(settingsDoc, { isSiteDown, updatedAt: serverTimestamp() });
+}
+
+
+// ─── EXPENSES ────────────────────────────────────────────────────────────────
+
+export async function getExpenses() {
+  const q = query(expensesCol, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function addExpense(expense) {
+  return await addDoc(expensesCol, { ...expense, createdAt: serverTimestamp() });
+}
+
+export async function deleteExpense(id) {
+  return await deleteDoc(doc(expensesCol, id));
+}
+

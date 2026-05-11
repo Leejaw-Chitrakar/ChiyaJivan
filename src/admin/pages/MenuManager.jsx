@@ -163,6 +163,32 @@ const SEED_MENU = {
       desc: "Grilled to perfection. Choice of Buff or Chicken.",
     },
   ],
+  "Smoke": [
+    {
+      id: "s1",
+      name: "Surya (Red)",
+      price: "20",
+      stock: true,
+      category: "Smoke",
+      desc: "Premium Surya cigarette.",
+    },
+    {
+      id: "s2",
+      name: "Surya (Arctic Ball)",
+      price: "25",
+      stock: true,
+      category: "Smoke",
+      desc: "Cooling mint Surya cigarette.",
+    },
+    {
+      id: "s3",
+      name: "Shikhar Ice",
+      price: "15",
+      stock: true,
+      category: "Smoke",
+      desc: "Crisp ice-flavored cigarette.",
+    },
+  ],
 };
 
 /** Group a flat array of items by category */
@@ -195,6 +221,12 @@ const CATEGORY_COLORS = {
     text: "text-[#AD4928]",
     border: "border-[#AD4928]/10",
   },
+  "Smoke": {
+    dot: "bg-gray-600",
+    bg: "bg-gray-100",
+    text: "text-gray-700",
+    border: "border-gray-200",
+  },
 };
 
 export default function MenuManager() {
@@ -214,6 +246,7 @@ export default function MenuManager() {
     category: "Hot Favorites",
     desc: "",
     stock: true,
+    tag: "",
   });
 
   // Load from Firestore on mount
@@ -312,6 +345,7 @@ export default function MenuManager() {
       category: "Hot Favorites",
       desc: "",
       stock: true,
+      tag: "",
     });
     setIsModalOpen(true);
   };
@@ -325,6 +359,7 @@ export default function MenuManager() {
       category: item.category,
       desc: item.desc || "",
       stock: item.stock,
+      tag: item.tag || "",
     });
     setIsModalOpen(true);
   };
@@ -659,6 +694,7 @@ export default function MenuManager() {
                       <option value="Bakery & Desserts">
                         Bakery & Desserts
                       </option>
+                      <option value="Smoke">Smoke</option>
                     </select>
                   </div>
 
@@ -686,6 +722,19 @@ export default function MenuManager() {
                         setFormData({ ...formData, desc: e.target.value })
                       }
                     ></textarea>
+                  </div>
+
+                  <div className="menu-form-group full">
+                    <label>Item Tag (Optional)</label>
+                    <input
+                      type="text"
+                      className="menu-form-input"
+                      placeholder="e.g. Bestseller, Must Try, New"
+                      value={formData.tag}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tag: e.target.value })
+                      }
+                    />
                   </div>
                 </div>
               </div>

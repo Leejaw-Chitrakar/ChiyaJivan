@@ -6,11 +6,11 @@ import { db } from "../lib/firebase";
 import {
   getShopSettings,
   subscribeToShopSettings,
+  subscribeToMenuItems,
 } from "../lib/firestoreService";
 import "../styles/OrderPage.css";
 
-// Same menu data as the main Menu component
-const categories = {
+const SEED_CATEGORIES = {
   "Hot Favorites": [
     {
       id: "h1",
@@ -18,6 +18,7 @@ const categories = {
       desc: "Our signature blend of CTC tea and creamy milk, brewed to perfection.",
       price: 35,
       tag: "Local Favorite",
+      stock: true,
     },
     {
       id: "h2",
@@ -25,6 +26,7 @@ const categories = {
       desc: "Spiced milk tea brewed with fresh ginger and secret mountain spices.",
       price: 45,
       tag: "Bestseller",
+      stock: true,
     },
     {
       id: "h3",
@@ -32,6 +34,7 @@ const categories = {
       desc: "Invigorating black tea infused with a house blend of aromatic spices.",
       price: 25,
       tag: null,
+      stock: true,
     },
     {
       id: "h4",
@@ -39,6 +42,7 @@ const categories = {
       desc: "The ultimate wellness brew — zesty lemon, sharp ginger, and wild mountain honey.",
       price: 100,
       tag: "Wellness",
+      stock: true,
     },
     {
       id: "h5",
@@ -46,6 +50,7 @@ const categories = {
       desc: "Velvety, rich chocolate served steaming hot with a dusting of cocoa.",
       price: 160,
       tag: "Indulgent",
+      stock: true,
     },
     {
       id: "h6",
@@ -53,6 +58,7 @@ const categories = {
       desc: "Smooth and creamy café-style milk coffee.",
       price: 60,
       tag: null,
+      stock: true,
     },
   ],
   "Cold Drinks": [
@@ -62,6 +68,7 @@ const categories = {
       desc: "Thick, creamy yogurt lassi blended with seasonal fruits.",
       price: 150,
       tag: "Traditional",
+      stock: true,
     },
     {
       id: "c2",
@@ -69,6 +76,7 @@ const categories = {
       desc: "Creamy vanilla blend mixed with crunchy KitKat and chocolate swirl.",
       price: 225,
       tag: "Popular",
+      stock: true,
     },
     {
       id: "c3",
@@ -76,6 +84,7 @@ const categories = {
       desc: "Fresh mint, lime, and sparkling soda — a crisp, timeless cooler.",
       price: 150,
       tag: null,
+      stock: true,
     },
     {
       id: "c4",
@@ -83,6 +92,7 @@ const categories = {
       desc: "A vibrant citrus punch with a hint of blue Curacao.",
       price: 140,
       tag: null,
+      stock: true,
     },
     {
       id: "c5",
@@ -90,6 +100,7 @@ const categories = {
       desc: "The perfect indulgence blending rich chocolate and bold espresso notes.",
       price: 250,
       tag: "Premium",
+      stock: true,
     },
     {
       id: "c6",
@@ -97,15 +108,17 @@ const categories = {
       desc: "Your choice of Coke or Sprite with a zingy Himalayan spice twist.",
       price: 90,
       tag: "Zesty",
+      stock: true,
     },
   ],
-  Food: [
+  "Food": [
     {
       id: "m1",
       name: "Buff Momo (Steam)",
       desc: "Hand-folded dumplings filled with lean buffalo meat.",
       price: 120,
       tag: "Bestseller",
+      stock: true,
     },
     {
       id: "m1f",
@@ -113,6 +126,7 @@ const categories = {
       desc: "Golden fried dumplings filled with lean buffalo meat.",
       price: 130,
       tag: null,
+      stock: true,
     },
     {
       id: "m2",
@@ -120,6 +134,7 @@ const categories = {
       desc: "Succulent chicken filling in a delicate wrapper.",
       price: 150,
       tag: "Recommended",
+      stock: true,
     },
     {
       id: "m2f",
@@ -127,6 +142,7 @@ const categories = {
       desc: "Crispy fried chicken dumplings.",
       price: 160,
       tag: null,
+      stock: true,
     },
     {
       id: "m3",
@@ -134,6 +150,7 @@ const categories = {
       desc: "Filled with fresh garden greens and local spices.",
       price: 100,
       tag: null,
+      stock: true,
     },
     {
       id: "m3f",
@@ -141,6 +158,7 @@ const categories = {
       desc: "Crispy fried vegetable dumplings.",
       price: 120,
       tag: null,
+      stock: true,
     },
     {
       id: "m4",
@@ -148,6 +166,7 @@ const categories = {
       desc: "Wok-tossed bison chunks with bell peppers, onions, and hot spices.",
       price: 180,
       tag: "Spicy",
+      stock: true,
     },
     {
       id: "m5",
@@ -155,6 +174,7 @@ const categories = {
       desc: "Crispy wings tossed in our signature Himalayan-glaze sauce.",
       price: 350,
       tag: "Must Try",
+      stock: true,
     },
     {
       id: "m6v",
@@ -162,6 +182,7 @@ const categories = {
       desc: "Freshly prepared and toasted with veg filling.",
       price: 160,
       tag: null,
+      stock: true,
     },
     {
       id: "m6c",
@@ -169,6 +190,7 @@ const categories = {
       desc: "Freshly prepared and toasted with chicken filling.",
       price: 200,
       tag: null,
+      stock: true,
     },
     {
       id: "m7",
@@ -176,6 +198,7 @@ const categories = {
       desc: "Golden-crisp potatoes seasoned with sea salt.",
       price: 120,
       tag: null,
+      stock: true,
     },
     {
       id: "m8b",
@@ -183,6 +206,7 @@ const categories = {
       desc: "Grilled to perfection on a stick.",
       price: 40,
       tag: null,
+      stock: true,
     },
     {
       id: "m8c",
@@ -190,16 +214,51 @@ const categories = {
       desc: "Grilled to perfection on a stick.",
       price: 50,
       tag: null,
+      stock: true,
+    },
+  ],
+  "Smoke": [
+    {
+      id: "s1",
+      name: "Surya (Red)",
+      desc: "Premium Surya cigarette.",
+      price: 20,
+      tag: null,
+      stock: true,
+    },
+    {
+      id: "s2",
+      name: "Surya (Arctic Ball)",
+      desc: "Cooling mint Surya cigarette.",
+      price: 25,
+      tag: null,
+      stock: true,
+    },
+    {
+      id: "s3",
+      name: "Shikhar Ice",
+      desc: "Crisp ice-flavored cigarette.",
+      price: 15,
+      tag: null,
+      stock: true,
     },
   ],
 };
 
-const TABS = Object.keys(categories);
+function groupByCategory(items) {
+  return items.reduce((acc, item) => {
+    const cat = item.category || "Uncategorized";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+}
 
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table") || "?";
   const [activeTab, setActiveTab] = useState("Hot Favorites");
+  const [categories, setCategories] = useState(SEED_CATEGORIES);
   const [tableCount, setTableCount] = useState(10);
   const [tableNames, setTableNames] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -212,19 +271,49 @@ export default function OrderPage() {
   const [isSiteDown, setIsSiteDown] = useState(false);
 
   useEffect(() => {
-    const unsub = subscribeToShopSettings((settings) => {
+    // 1. Subscribe to shop settings
+    const unsubSettings = subscribeToShopSettings((settings) => {
       if (settings) {
         if (settings.tableCount) setTableCount(settings.tableCount);
         if (settings.tableNames) setTableNames(settings.tableNames);
-        if (settings.isSiteDown !== undefined) setIsSiteDown(settings.isSiteDown);
+        if (settings.isSiteDown !== undefined)
+          setIsSiteDown(settings.isSiteDown);
       }
     });
-    return () => unsub();
+
+    // 2. Subscribe to menu items
+    const unsubMenu = subscribeToMenuItems((items) => {
+      if (items && items.length > 0) {
+        const dbMenu = groupByCategory(items);
+        setCategories((prev) => {
+          const merged = { ...prev };
+          Object.keys(dbMenu).forEach((cat) => {
+            if (!merged[cat]) merged[cat] = [];
+
+            dbMenu[cat].forEach((newItem) => {
+              const idx = merged[cat].findIndex((i) => i.name === newItem.name);
+              if (idx >= 0) {
+                merged[cat][idx] = { ...merged[cat][idx], ...newItem };
+              } else {
+                merged[cat].push(newItem);
+              }
+            });
+          });
+          return merged;
+        });
+      }
+    });
+
+    return () => {
+      unsubSettings();
+      unsubMenu();
+    };
   }, []);
 
+  const TABS = Object.keys(categories);
   const currentTableName = tableNames[tableNumber] || `Table ${tableNumber}`;
 
-  const items = categories[activeTab];
+  const items = categories[activeTab] || [];
 
   const addToCart = (item) => {
     setCart((prev) => ({
@@ -250,7 +339,10 @@ export default function OrderPage() {
 
   const cartItems = Object.values(cart);
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
-  const cartTotal = cartItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const cartTotal = cartItems.reduce(
+    (sum, i) => sum + (parseFloat(i.price) || 0) * i.qty,
+    0,
+  );
 
   const handleSubmitOrder = async () => {
     if (cartItems.length === 0) return;
@@ -473,49 +565,51 @@ export default function OrderPage() {
 
       {/* Menu Items */}
       <div className="order-menu">
-        {items.map((item) => {
-          const inCart = cart[item.id];
-          return (
-            <div key={item.id} className="order-item">
-              <div className="order-item-info">
-                <div className="order-item-top">
-                  <h3 className="order-item-name">{item.name}</h3>
-                  {item.tag && (
-                    <span className="order-item-tag">{item.tag}</span>
-                  )}
+        {items
+          .filter((item) => item.stock !== false)
+          .map((item) => {
+            const inCart = cart[item.id];
+            return (
+              <div key={item.id} className="order-item">
+                <div className="order-item-info">
+                  <div className="order-item-top">
+                    <h3 className="order-item-name">{item.name}</h3>
+                    {item.tag && (
+                      <span className="order-item-tag">{item.tag}</span>
+                    )}
+                  </div>
+                  <p className="order-item-desc">{item.desc}</p>
+                  <p className="order-item-price">Rs. {item.price}</p>
                 </div>
-                <p className="order-item-desc">{item.desc}</p>
-                <p className="order-item-price">Rs. {item.price}</p>
-              </div>
-              <div className="order-item-action">
-                {inCart ? (
-                  <div className="order-item-qty">
+                <div className="order-item-action">
+                  {inCart ? (
+                    <div className="order-item-qty">
+                      <button
+                        className="order-qty-btn"
+                        onClick={() => removeFromCart(item.id)}
+                      >
+                        −
+                      </button>
+                      <span className="order-qty-count">{inCart.qty}</span>
+                      <button
+                        className="order-qty-btn"
+                        onClick={() => addToCart(item)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      className="order-qty-btn"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      −
-                    </button>
-                    <span className="order-qty-count">{inCart.qty}</span>
-                    <button
-                      className="order-qty-btn"
+                      className="order-add-btn"
                       onClick={() => addToCart(item)}
                     >
-                      +
+                      Add
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    className="order-add-btn"
-                    onClick={() => addToCart(item)}
-                  >
-                    Add
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
 
       {/* Cart / Checkout (sticky bottom) */}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { subscribeToShopSettings } from "../lib/firestoreService";
+import { subscribeToShopSettings, subscribeToMenuItems } from "../lib/firestoreService";
 import "../styles/Menu.css";
 
-const categories = {
+const SEED_CATEGORIES = {
   "Hot Favorites": [
     {
       id: "h1",
@@ -11,6 +11,7 @@ const categories = {
       desc: "Our signature blend of CTC tea and creamy milk, brewed to perfection.",
       price: "35",
       tag: "Local Favorite",
+      stock: true,
     },
     {
       id: "h2",
@@ -18,6 +19,7 @@ const categories = {
       desc: "Spiced milk tea brewed with fresh ginger and secret mountain spices.",
       price: "45",
       tag: "Bestseller",
+      stock: true,
     },
     {
       id: "h3",
@@ -25,6 +27,7 @@ const categories = {
       desc: "Invigorating black tea infused with a house blend of aromatic spices.",
       price: "25",
       tag: null,
+      stock: true,
     },
     {
       id: "h4",
@@ -32,6 +35,7 @@ const categories = {
       desc: "The ultimate wellness brew — zesty lemon, sharp ginger, and wild mountain honey.",
       price: "100",
       tag: "Wellness",
+      stock: true,
     },
     {
       id: "h5",
@@ -39,6 +43,7 @@ const categories = {
       desc: "Velvety, rich chocolate served steaming hot with a dusting of cocoa.",
       price: "160",
       tag: "Indulgent",
+      stock: true,
     },
     {
       id: "h6",
@@ -46,6 +51,7 @@ const categories = {
       desc: "Smooth and creamy café-style milk coffee.",
       price: "60",
       tag: null,
+      stock: true,
     },
   ],
   "Cold Drinks": [
@@ -55,6 +61,7 @@ const categories = {
       desc: "Thick, creamy yogurt lassi blended with seasonal fruits (Mango/Banana).",
       price: "150",
       tag: "Traditional",
+      stock: true,
     },
     {
       id: "c2",
@@ -62,6 +69,7 @@ const categories = {
       desc: "Creamy vanilla blend mixed with crunchy KitKat and chocolate swirl.",
       price: "225",
       tag: "Popular",
+      stock: true,
     },
     {
       id: "c3",
@@ -69,6 +77,7 @@ const categories = {
       desc: "Fresh mint, lime, and sparkling soda — a crisp, timeless cooler.",
       price: "150",
       tag: null,
+      stock: true,
     },
     {
       id: "c4",
@@ -76,6 +85,7 @@ const categories = {
       desc: "A vibrant citrus punch with a hint of blue Curacao.",
       price: "140",
       tag: null,
+      stock: true,
     },
     {
       id: "c5",
@@ -83,6 +93,7 @@ const categories = {
       desc: "The perfect indulgence blending rich chocolate and bold espresso notes.",
       price: "250",
       tag: "Premium",
+      stock: true,
     },
     {
       id: "c6",
@@ -90,15 +101,17 @@ const categories = {
       desc: "Your choice of Coke or Sprite with a zingy Himalayan spice twist.",
       price: "90",
       tag: "Zesty",
+      stock: true,
     },
   ],
-  Food: [
+  "Food": [
     {
       id: "m1",
       name: "Buff Momo",
       desc: "Hand-folded dumplings filled with lean buffalo meat. Choice of Steam/Fry.",
       price: "120 / 130",
       tag: "Bestseller",
+      stock: true,
     },
     {
       id: "m2",
@@ -106,6 +119,7 @@ const categories = {
       desc: "Succulent chicken filling in a delicate wrapper. Choice of Steam/Fry.",
       price: "150 / 160",
       tag: "Recommended",
+      stock: true,
     },
     {
       id: "m3",
@@ -113,6 +127,7 @@ const categories = {
       desc: "Filled with fresh garden greens and local spices. Choice of Steam/Fry.",
       price: "100 / 120",
       tag: null,
+      stock: true,
     },
     {
       id: "m4",
@@ -120,6 +135,7 @@ const categories = {
       desc: "Wok-tossed bison chunks with bell peppers, onions, and hot spices.",
       price: "180",
       tag: "Spicy",
+      stock: true,
     },
     {
       id: "m5",
@@ -127,6 +143,7 @@ const categories = {
       desc: "Crispy wings tossed in our signature Himalayan-glaze sauce.",
       price: "350",
       tag: "Must Try",
+      stock: true,
     },
     {
       id: "m6",
@@ -134,6 +151,7 @@ const categories = {
       desc: "Freshly prepared and toasted. Choice of Veg or Chicken filling.",
       price: "160 / 200",
       tag: "Filling",
+      stock: true,
     },
     {
       id: "m7",
@@ -141,6 +159,7 @@ const categories = {
       desc: "Golden-crisp potatoes seasoned with sea salt.",
       price: "120",
       tag: null,
+      stock: true,
     },
     {
       id: "m8",
@@ -148,15 +167,50 @@ const categories = {
       desc: "Grilled to perfection. Choice of Buff or Chicken.",
       price: "40 / 50",
       tag: null,
+      stock: true,
+    },
+  ],
+  "Smoke": [
+    {
+      id: "s1",
+      name: "Surya (Red)",
+      desc: "Premium Surya cigarette.",
+      price: "20",
+      tag: null,
+      stock: true,
+    },
+    {
+      id: "s2",
+      name: "Surya (Arctic Ball)",
+      desc: "Cooling mint Surya cigarette.",
+      price: "25",
+      tag: null,
+      stock: true,
+    },
+    {
+      id: "s3",
+      name: "Shikhar Ice",
+      desc: "Crisp ice-flavored cigarette.",
+      price: "15",
+      tag: null,
+      stock: true,
     },
   ],
 };
 
-const TABS = Object.keys(categories);
+function groupByCategory(items) {
+  return items.reduce((acc, item) => {
+    const cat = item.category || "Uncategorized";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+}
 
 export default function Menu() {
   const navigate = useNavigate();
   const [active, setActive] = useState("Hot Favorites");
+  const [categories, setCategories] = useState(SEED_CATEGORIES);
   const [showPrompt, setShowPrompt] = useState(false);
   const [tableNum, setTableNum] = useState("");
   const [isShopOpen, setIsShopOpen] = useState(true);
@@ -164,7 +218,8 @@ export default function Menu() {
   const [tableNames, setTableNames] = useState({});
 
   useEffect(() => {
-    const unsub = subscribeToShopSettings((settings) => {
+    // 1. Subscribe to shop settings
+    const unsubSettings = subscribeToShopSettings((settings) => {
       if (settings) {
         if (typeof settings.isShopOpen === "boolean") {
           setIsShopOpen(settings.isShopOpen);
@@ -177,12 +232,40 @@ export default function Menu() {
         }
       }
     });
-    return () => unsub();
+
+    // 2. Subscribe to menu items
+    const unsubMenu = subscribeToMenuItems((items) => {
+      if (items && items.length > 0) {
+        const dbMenu = groupByCategory(items);
+        setCategories((prev) => {
+          // Merge logic similar to MenuManager
+          const merged = { ...prev };
+          Object.keys(dbMenu).forEach((cat) => {
+            if (!merged[cat]) merged[cat] = [];
+            
+            dbMenu[cat].forEach((newItem) => {
+              const idx = merged[cat].findIndex(i => i.name === newItem.name);
+              if (idx >= 0) {
+                merged[cat][idx] = { ...merged[cat][idx], ...newItem };
+              } else {
+                merged[cat].push(newItem);
+              }
+            });
+          });
+          return merged;
+        });
+      }
+    });
+
+    return () => {
+      unsubSettings();
+      unsubMenu();
+    };
   }, []);
 
+  const TABS = Object.keys(categories);
   const tableOptions = Array.from({ length: tableCount }, (_, i) => i + 1);
-
-  const items = categories[active];
+  const items = categories[active] || [];
 
   const handleOrderRedirect = (e) => {
     e.preventDefault();
@@ -307,25 +390,27 @@ export default function Menu() {
 
         {/* Menu Items Grid */}
         <div className="menu-grid">
-          {items.map((item) => (
-            <div key={item.id} className="menu-card group">
-              <div className="menu-card-content">
-                <div className="menu-card-header">
-                  <div className="menu-item-title-wrap">
-                    <h3 className="menu-item-title">{item.name}</h3>
-                    {item.tag && (
-                      <span className="menu-item-tag">{item.tag}</span>
-                    )}
+          {items
+            .filter((item) => item.stock !== false)
+            .map((item) => (
+              <div key={item.id} className="menu-card group">
+                <div className="menu-card-content">
+                  <div className="menu-card-header">
+                    <div className="menu-item-title-wrap">
+                      <h3 className="menu-item-title">{item.name}</h3>
+                      {item.tag && (
+                        <span className="menu-item-tag">{item.tag}</span>
+                      )}
+                    </div>
+                    <div className="menu-price-wrap">
+                      <span className="menu-item-price-unit">Rs.</span>
+                      <span className="menu-item-price-value">{item.price}</span>
+                    </div>
                   </div>
-                  <div className="menu-price-wrap">
-                    <span className="menu-item-price-unit">Rs.</span>
-                    <span className="menu-item-price-value">{item.price}</span>
-                  </div>
+                  <p className="menu-item-desc">{item.desc}</p>
                 </div>
-                <p className="menu-item-desc">{item.desc}</p>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         {/* Bottom CTA */}
