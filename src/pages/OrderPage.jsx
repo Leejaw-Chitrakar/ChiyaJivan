@@ -11,7 +11,7 @@ import {
 import "../styles/OrderPage.css";
 
 const SEED_CATEGORIES = {
-  "Hot Favorites": [
+  "Hot Drinks": [
     {
       id: "h1",
       name: "Milk Tea",
@@ -219,6 +219,14 @@ const SEED_CATEGORIES = {
   ],
   "Smoke": [
     {
+      id: "s0",
+      name: "Hookha",
+      desc: "Premium flavored hookah sessions.",
+      price: 500,
+      tag: "Premium",
+      stock: true,
+    },
+    {
       id: "s1",
       name: "Surya (Red)",
       desc: "Premium Surya cigarette.",
@@ -257,7 +265,7 @@ function groupByCategory(items) {
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table") || "?";
-  const [activeTab, setActiveTab] = useState("Hot Favorites");
+  const [activeTab, setActiveTab] = useState("Chiya");
   const [categories, setCategories] = useState(SEED_CATEGORIES);
   const [tableCount, setTableCount] = useState(10);
   const [tableNames, setTableNames] = useState({});
@@ -269,6 +277,16 @@ export default function OrderPage() {
   const [customerName, setCustomerName] = useState("");
 
   const [isSiteDown, setIsSiteDown] = useState(false);
+
+  // Hookha Flavor State
+  const [showFlavorModal, setShowFlavorModal] = useState(false);
+  const [selectedHookha, setSelectedHookha] = useState(null);
+  const HOOKHA_FLAVORS = [
+    "Double Apple",
+    "Mint",
+    "Blueberry",
+    "1001 Nights"
+  ];
 
   useEffect(() => {
     // 1. Subscribe to shop settings
@@ -310,19 +328,50 @@ export default function OrderPage() {
     };
   }, []);
 
+  const visibleCategories = Object.keys(categories).reduce((acc, cat) => {
+    const hasStock = categories[cat].some(item => item.stock !== false);
+    if (hasStock) acc[cat] = categories[cat];
+    return acc;
+  }, {});
+
+  const visibleTabs = Object.keys(visibleCategories);
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+      setActiveTab(visibleTabs[0]);
+    }
+  }, [visibleTabs, activeTab]);
+
   const TABS = Object.keys(categories);
-  const currentTableName = tableNames[tableNumber] || `Table ${tableNumber}`;
+  const currentTableName = tableNames[tableNumber] || tableNames[parseInt(tableNumber)] || `Table ${tableNumber}`;
 
   const items = categories[activeTab] || [];
 
-  const addToCart = (item) => {
+  const addToCart = (item, flavor = null) => {
+    // If it's Hookha and no flavor is selected yet, show modal
+    if (item.name.toLowerCase().includes("hookha") && !flavor) {
+      setSelectedHookha(item);
+      setShowFlavorModal(true);
+      return;
+    }
+
+    const cartKey = flavor ? `${item.id}-${flavor}` : item.id;
+    const finalName = flavor ? `${item.name} (${flavor})` : item.name;
+
     setCart((prev) => ({
       ...prev,
-      [item.id]: {
+      [cartKey]: {
         ...item,
-        qty: (prev[item.id]?.qty || 0) + 1,
+        name: finalName,
+        flavor: flavor,
+        qty: (prev[cartKey]?.qty || 0) + 1,
       },
     }));
+
+    if (flavor) {
+      setShowFlavorModal(false);
+      setSelectedHookha(null);
+    }
   };
 
   const removeFromCart = (itemId) => {
@@ -499,8 +548,8 @@ export default function OrderPage() {
       className="order-page"
       style={cartCount > 0 ? { paddingBottom: 420 } : undefined}
     >
-      <SEO 
-        title={`Order - ${currentTableName}`} 
+      <SEO
+        title={`Order - ${currentTableName}`}
         description={`Place your order at Chiya Jivan from ${currentTableName}. Enjoy our handcrafted Himalayan teas and local snacks.`}
       />
       {/* Top Bar */}
@@ -551,7 +600,7 @@ export default function OrderPage() {
       {/* Tab Nav */}
       <div className="order-tabs-wrap">
         <div className="order-tabs">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -563,12 +612,13 @@ export default function OrderPage() {
         </div>
       </div>
 
-      {/* Menu Items */}
       <div className="order-menu">
-        {items
+        {(visibleCategories[activeTab] || [])
           .filter((item) => item.stock !== false)
           .map((item) => {
-            const inCart = cart[item.id];
+            const isHookha = item.name.toLowerCase().includes("hookha");
+            const inCart = isHookha ? null : cart[item.id];
+
             return (
               <div key={item.id} className="order-item">
                 <div className="order-item-info">
@@ -630,14 +680,32 @@ export default function OrderPage() {
             {/* Cart Summary */}
             <div className="order-cart-summary">
               <div className="order-cart-items-list">
-                {cartItems.map((ci) => (
-                  <div key={ci.id} className="order-cart-line">
-                    <span>
-                      {ci.name} × {ci.qty}
-                    </span>
-                    <span>Rs. {ci.price * ci.qty}</span>
-                  </div>
-                ))}
+                {Object.keys(cart).map((key) => {
+                  const ci = cart[key];
+                  return (
+                    <div key={key} className="order-cart-line">
+                      <div className="order-cart-item-info">
+                        <span className="order-cart-item-name">{ci.name}</span>
+                        <div className="order-cart-qty-controls">
+                          <button
+                            className="order-cart-qty-btn"
+                            onClick={() => removeFromCart(key)}
+                          >
+                            −
+                          </button>
+                          <span className="order-cart-qty-val">{ci.qty}</span>
+                          <button
+                            className="order-cart-qty-btn"
+                            onClick={() => addToCart(ci, ci.flavor)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <span className="order-cart-item-price">Rs. {ci.price * ci.qty}</span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="order-cart-total-row">
                 <span>Total</span>
@@ -668,6 +736,35 @@ export default function OrderPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Hookha Flavor Modal */}
+      {showFlavorModal && selectedHookha && (
+        <div className="flavor-modal-overlay">
+          <div className="flavor-modal-content">
+            <h3 className="flavor-modal-title">Select Flavor</h3>
+            <p className="flavor-modal-desc">Pick your favorite hookah flavor</p>
+            <div className="flavor-grid">
+              {HOOKHA_FLAVORS.map(flavor => (
+                <button
+                  key={flavor}
+                  className="flavor-btn"
+                  onClick={() => addToCart(selectedHookha, flavor)}
+                >
+                  {flavor}
+                </button>
+              ))}
+            </div>
+            <button
+              className="flavor-cancel-btn"
+              onClick={() => {
+                setShowFlavorModal(false);
+                setSelectedHookha(null);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

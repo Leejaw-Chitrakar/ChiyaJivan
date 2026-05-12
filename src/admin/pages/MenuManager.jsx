@@ -17,17 +17,18 @@ import {
   addMenuItem,
   updateMenuItem,
 } from "../../lib/firestoreService";
+import { initializeDatabase } from "../../lib/dbInit";
 import "../styles/MenuManager.css";
 
 // Fallback seed data (used if Firestore is empty)
 const SEED_MENU = {
-  "Hot Favorites": [
+  "Hot Drinks": [
     {
       id: "h1",
       name: "Milk Tea",
       price: "35",
       stock: true,
-      category: "Hot Favorites",
+      category: "Hot Drinks",
       desc: "Our signature blend of CTC tea and creamy milk.",
     },
     {
@@ -35,7 +36,7 @@ const SEED_MENU = {
       name: "Milk Masala Tea",
       price: "45",
       stock: true,
-      category: "Hot Favorites",
+      category: "Hot Drinks",
       desc: "Spiced milk tea with fresh ginger and secret mountain spices.",
     },
     {
@@ -43,7 +44,7 @@ const SEED_MENU = {
       name: "Black Masala Tea",
       price: "25",
       stock: true,
-      category: "Hot Favorites",
+      category: "Hot Drinks",
       desc: "Invigorating black tea with aromatic spices.",
     },
     {
@@ -51,7 +52,7 @@ const SEED_MENU = {
       name: "Hot Lemon Honey Ginger",
       price: "100",
       stock: true,
-      category: "Hot Favorites",
+      category: "Hot Drinks",
       desc: "Wellness brew — zesty lemon, ginger, and honey.",
     },
     {
@@ -59,7 +60,7 @@ const SEED_MENU = {
       name: "Hot Chocolate",
       price: "160",
       stock: true,
-      category: "Hot Favorites",
+      category: "Hot Drinks",
       desc: "Velvety, rich chocolate with a dusting of cocoa.",
     },
   ],
@@ -105,13 +106,13 @@ const SEED_MENU = {
       desc: "Blending rich chocolate and bold espresso notes.",
     },
   ],
-  "Momo & Food": [
+  "Food": [
     {
       id: "m1",
       name: "Buff Momo",
       price: "120 / 130",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Hand-folded dumplings filled with lean buffalo meat.",
     },
     {
@@ -119,7 +120,7 @@ const SEED_MENU = {
       name: "Chicken Momo",
       price: "150 / 160",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Succulent chicken filling in a delicate wrapper.",
     },
     {
@@ -127,7 +128,7 @@ const SEED_MENU = {
       name: "Veg Momo",
       price: "100 / 120",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Filled with fresh garden greens and local spices.",
     },
     {
@@ -135,7 +136,7 @@ const SEED_MENU = {
       name: "Buff Chilly",
       price: "180",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Wok-tossed bison chunks with spicy peppers.",
     },
     {
@@ -143,7 +144,7 @@ const SEED_MENU = {
       name: "Chicken Wings",
       price: "350",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Crispy wings tossed in our signature Himalayan-glaze sauce.",
     },
     {
@@ -151,7 +152,7 @@ const SEED_MENU = {
       name: "Sandwich (Veg/Chicken)",
       price: "160 / 200",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Freshly toasted with your choice of filling.",
     },
     {
@@ -159,11 +160,19 @@ const SEED_MENU = {
       name: "Sausages (Stick)",
       price: "40 / 50",
       stock: true,
-      category: "Momo & Food",
+      category: "Food",
       desc: "Grilled to perfection. Choice of Buff or Chicken.",
     },
   ],
   "Smoke": [
+    {
+      id: "s0",
+      name: "Hookha",
+      price: "500",
+      stock: true,
+      category: "Smoke",
+      desc: "Premium flavored hookah sessions.",
+    },
     {
       id: "s1",
       name: "Surya (Red)",
@@ -203,7 +212,7 @@ function groupByCategory(items) {
 }
 
 const CATEGORY_COLORS = {
-  "Hot Favorites": {
+  "Hot Drinks": {
     dot: "bg-orange-400",
     bg: "bg-orange-50",
     text: "text-orange-600",
@@ -215,17 +224,23 @@ const CATEGORY_COLORS = {
     text: "text-blue-600",
     border: "border-blue-100",
   },
-  "Momo & Food": {
+  "Food": {
     dot: "bg-[#AD4928]",
     bg: "bg-[#AD4928]/5",
     text: "text-[#AD4928]",
     border: "border-[#AD4928]/10",
   },
   "Smoke": {
-    dot: "bg-gray-600",
-    bg: "bg-gray-100",
-    text: "text-gray-700",
-    border: "border-gray-200",
+    dot: "bg-slate-700",
+    bg: "bg-slate-100",
+    text: "text-slate-800",
+    border: "border-slate-300",
+  },
+  "Bakery & Desserts": {
+    dot: "bg-pink-500",
+    bg: "bg-pink-50",
+    text: "text-pink-600",
+    border: "border-pink-200",
   },
 };
 
@@ -242,10 +257,9 @@ export default function MenuManager() {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
+    category: "Hot Drinks",
     price: "",
-    category: "Hot Favorites",
     desc: "",
-    stock: true,
     tag: "",
   });
 
@@ -342,10 +356,11 @@ export default function MenuManager() {
     setFormData({
       name: "",
       price: "",
-      category: "Hot Favorites",
+      category: "Chiya",
       desc: "",
       stock: true,
       tag: "",
+      options: [],
     });
     setIsModalOpen(true);
   };
@@ -354,11 +369,10 @@ export default function MenuManager() {
     setModalMode("edit");
     setEditingItem(item);
     setFormData({
-      name: item.name,
-      price: item.price,
-      category: item.category,
+      name: item.name || "",
+      category: item.category || "Hot Drinks",
+      price: item.price || "",
       desc: item.desc || "",
-      stock: item.stock,
       tag: item.tag || "",
     });
     setIsModalOpen(true);
@@ -434,9 +448,11 @@ export default function MenuManager() {
           <p className="menu-manager-eyebrow">Chiya Jivan — Admin</p>
           <h1 className="menu-manager-title">Menu Management</h1>
         </div>
-        <button onClick={openAddModal} className="menu-manager-add-btn">
-          <Plus size={18} strokeWidth={2.5} /> Add New Item
-        </button>
+        <div className="menu-header-actions">
+          <button onClick={openAddModal} className="menu-manager-add-btn">
+            <Plus size={18} strokeWidth={2.5} /> Add New Item
+          </button>
+        </div>
       </div>
 
       {/* Summary Strip */}
@@ -688,9 +704,9 @@ export default function MenuManager() {
                         setFormData({ ...formData, category: e.target.value })
                       }
                     >
-                      <option value="Hot Favorites">Hot Favorites</option>
+                      <option value="Hot Drinks">Hot Drinks</option>
                       <option value="Cold Drinks">Cold Drinks</option>
-                      <option value="Momo & Food">Momo & Food</option>
+                      <option value="Food">Food</option>
                       <option value="Bakery & Desserts">
                         Bakery & Desserts
                       </option>

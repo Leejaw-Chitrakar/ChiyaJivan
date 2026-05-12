@@ -1,0 +1,50 @@
+CHIYA JIVAN — COMPLETE FEATURE LIST & DOCUMENTATION
+
+1. CUSTOMER EXPERIENCE (Ordering Frontend)
+--------------------------------------------------
+- Smart Digital Menu: Browse items by category (Hot Drinks, Cold Drinks, Snacks, etc.) with high-quality images and descriptions.
+- QR-Code Integration: Table-specific ordering ensures orders are automatically tagged to the correct table number.
+- Generic Item Options: Support for custom selections (e.g., Hookah flavors: Double Apple, Mint, etc.) during the ordering process.
+- Live Order Tracking: Customers can see their order status (Pending, Preparing, Served) in real-time on their own phones.
+- Stock Sensitivity: Items automatically disappear or show as "Out of Stock" if disabled by admin.
+- SEO Optimized: High-performance, SEO-friendly pages for the landing site and ordering interface.
+
+2. WAITER DASHBOARD (Mobile-Optimized Operational Tool)
+--------------------------------------------------
+- Live Table View: Aggregated view of all active tables with their specific orders, totals, and customer names.
+- One-Tap Workflow: Streamlined buttons to move orders through the pipeline (Start Preparing -> Mark Served -> Process Payment).
+- On-Floor Ordering: Waiters can manually take orders from guests using an integrated "New Order" flow with full menu access.
+- Quantity Controls: Fast +/- buttons for adjusting item counts during order entry.
+- Instant Payment Processing: Mark tables as paid (Cash/Online) and automatically free up table occupancy.
+- Notification System: Real-time bell chime alerts for new incoming orders placed by customers.
+
+3. ADMIN DASHBOARD (Centralized Management)
+--------------------------------------------------
+- Overview Analytics: Real-time dashboard showing today's sales, active orders, and table occupancy stats.
+- Menu Manager: 
+    - Full control over categories and menu items.
+    - Toggle stock availability instantly.
+    - Set custom tags (Must Try, New, Bestseller).
+- Order Tracking Pro: Advanced view to manage all shop orders, handle bulk table completions, and view historical order notes.
+- Table QR Manager: 
+    - Set the number of tables in the shop.
+    - Define custom table names (e.g., "VVIP", "Garden 1").
+    - Generate unique QR codes for every table.
+- Expenses & Sales Tracker:
+    - Track revenue by payment method (Cash vs. Online).
+    - Log operational expenses (Ingredients, Rent, etc.) to see net profit.
+    - Apply discounts to orders during checkout.
+- Sales History: Comprehensive archive of all past orders for audit and analysis.
+- Social & Shop Updates: Manage public announcements, social links, and shop gallery.
+- Global Settings: 
+    - Auto-Schedule: Set shop opening/closing hours.
+    - Maintenance Mode: Global "Kill Switch" to disable ordering during emergencies or closing hours.
+
+4. CORE SYSTEM & TECHNICAL FEATURES
+--------------------------------------------------
+- Real-Time Database: Powered by Google Firebase (Firestore) for instant sync across all devices without page reloads.
+- Role-Based Access: Dedicated logic for Super Admins, Admins, and Customers.
+- Audio Notifications: Browser-compatible audio alert system for new orders.
+- Database Organize Tool: One-click setup to initialize or reorganize menu categories and items.
+- High-Performance UI: Built with React and optimized with modern CSS for a premium, fast-loading feel.
+- Responsive Design: Fully adaptive interface that works perfectly on Desktop, Tablets, and mobile phones.

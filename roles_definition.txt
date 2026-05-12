@@ -1,0 +1,31 @@
+Chiya Jivan — System Roles & Permissions Definition
+
+1. SUPER ADMIN (Owner/Manager)
+--------------------------------------------------
+Access Level: Full System Access
+Responsibilities:
+- Manage Admin Accounts: Can add, remove, or change credentials for secondary Admin users.
+- Database Management: Has the authority to reset or "Organize" the database.
+- System Configuration: Can change critical shop settings (e.g., Table Count, Shop Maintenance Mode).
+- Financial Oversight: Full access to all-time sales analytics and detailed financial reports.
+- Advanced Tools: Access to QR code generation and global system logs.
+
+2. ADMIN (Staff/Waiters)
+--------------------------------------------------
+Access Level: Operational Access
+Responsibilities:
+- Order Management: Real-time tracking of orders, updating status (Preparing, Served), and processing payments.
+- Menu Management: Can add new items, edit prices, update descriptions, and toggle stock availability.
+- Floor Management: Can see table occupancy and mark tables as free or occupied manually.
+- Basic Reporting: Can view daily sales summaries and current active orders.
+- No Access To: Admin user management or critical database reset functions.
+
+3. USERS / CUSTOMERS (Dine-in Guests)
+--------------------------------------------------
+Access Level: Public / QR-Only Access
+Responsibilities:
+- Digital Menu: Can scan table-specific QR codes to browse the menu with real-time stock updates.
+- Ordering: Can add items to their cart, select options (like Hookah flavors), and place orders.
+- Order Tracking: Can view the live status of their order from their own device.
+- Personalization: Can enter their name for a more personalized service experience.
+- Security: No access to any admin dashboards, settings, or other tables' order data.

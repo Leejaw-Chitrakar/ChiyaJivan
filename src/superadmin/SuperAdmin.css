@@ -1,0 +1,356 @@
+.super-admin-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+}
+
+.super-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.super-icon-bg {
+  background: #111827;
+  padding: 1rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.super-title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.super-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.system-status.up {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.system-status.down {
+  background: #fef2f2;
+  color: #dc2626;
+  animation: pulse 2s infinite;
+}
+
+.super-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.super-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06);
+  transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.super-card:hover {
+  transform: translateY(-4px);
+}
+
+.super-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.super-status-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.super-status-badge.active {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.super-status-badge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.super-card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.super-card-desc {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.super-card-btn {
+  width: 100%;
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: none;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.super-card-btn:hover {
+  filter: brightness(0.9);
+}
+
+.super-card-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.super-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.super-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+
+.super-modal h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.super-modal p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.super-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.super-modal-cancel {
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #111827;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.super-modal-confirm {
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: none;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Tabs */
+.super-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.super-tabs button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  font-weight: 700;
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.super-tabs button.active {
+  color: #AD4928;
+}
+
+.super-tabs button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #AD4928;
+}
+
+/* Staff Management */
+.staff-management-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.staff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.staff-table th {
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.staff-table td {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.staff-email {
+  font-weight: 600;
+  color: #111827;
+}
+
+.role-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.role-pill.superadmin { background: #fee2e2; color: #dc2626; }
+.role-pill.admin { background: #eff6ff; color: #2563eb; }
+.role-pill.waiter { background: #f0fdf4; color: #16a34a; }
+.role-pill.visitor { background: #f3f4f6; color: #6b7280; }
+
+.role-select {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 0.875rem;
+}
+
+/* Audit Logs */
+.audit-logs-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.audit-item {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.audit-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-action {
+  font-weight: 800;
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.audit-user {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.audit-detail {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.audit-time {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .audit-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .audit-time {
+    text-align: right;
+  }
+}

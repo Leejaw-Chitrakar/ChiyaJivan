@@ -36,9 +36,14 @@ const sections = [
   },
 ];
 
-export default function Settings() {
+export default function Settings({ userRole }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notificationsEnabled') === 'true';
+  });
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [openTime, setOpenTime] = useState('07:00');
   const [closeTime, setCloseTime] = useState('21:00');
@@ -79,10 +84,28 @@ export default function Settings() {
       setShowShopModal(true);
     } else if (name === 'Profile Settings') {
       setShowProfileModal(true);
+    } else if (name === 'Notifications') {
+      setShowNotificationsModal(true);
     } else {
       alert(`Settings for "${name}" are coming soon.`);
     }
   };
+
+  const toggleNotifications = async () => {
+    if (!notificationsEnabled) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setNotificationsEnabled(true);
+        localStorage.setItem('notificationsEnabled', 'true');
+      } else {
+        alert('Browser notification permission is required to enable alerts.');
+      }
+    } else {
+      setNotificationsEnabled(false);
+      localStorage.setItem('notificationsEnabled', 'false');
+    }
+  };
+
 
   const saveSchedule = async () => {
     setIsSaving(true);
@@ -114,18 +137,6 @@ export default function Settings() {
     setShowProfileModal(false);
   };
 
-  const handleTakeDownSite = async () => {
-    const action = isSiteDown ? 'bring the site back up' : 'take down the site';
-    if (!window.confirm(`Are you sure you want to ${action}? This will affect all public pages.`)) return;
-    
-    setIsSaving(true);
-    await saveShopSettings({
-      isSiteDown: !isSiteDown
-    });
-    setIsSiteDown(!isSiteDown);
-    setIsSaving(false);
-  };
-
   return (
     <div className="settings-container">
       {/* Header */}
@@ -154,20 +165,6 @@ export default function Settings() {
             </div>
           </button>
         ))}
-      </div>
-
-      {/* Danger Zone */}
-      <div className="settings-danger-card">
-        <h3 className="settings-danger-title">Danger Zone</h3>
-        <p className="settings-danger-desc">These actions are critical. Please proceed with caution.</p>
-        <button 
-          className="settings-danger-btn"
-          onClick={handleTakeDownSite}
-          disabled={isSaving}
-          style={{ backgroundColor: isSiteDown ? '#10b981' : '#ef4444', borderColor: isSiteDown ? '#10b981' : '#ef4444', color: 'white' }}
-        >
-          {isSaving ? 'Processing...' : (isSiteDown ? 'Bring Site Back Up' : 'Take Down Site')}
-        </button>
       </div>
 
       {/* Version info */}
@@ -317,6 +314,60 @@ export default function Settings() {
               >
                 <Save size={20} strokeWidth={2.5} />
                 {isSaving ? 'Saving...' : 'Save Preferences'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNotificationsModal && (
+        <div className="settings-modal-overlay">
+          <div className="settings-modal-content">
+            <div className="settings-modal-header">
+              <div className="settings-modal-header-left">
+                <div className="settings-modal-icon" style={{ backgroundColor: '#fff7ed', color: '#f59e0b' }}>
+                  <Bell size={20} strokeWidth={2.5} />
+                </div>
+                <h2>Notification Settings</h2>
+              </div>
+              <button 
+                onClick={() => setShowNotificationsModal(false)}
+                className="settings-modal-close"
+              >
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+            
+            <div className="settings-modal-body">
+              <div className="settings-modal-toggle-card">
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {notificationsEnabled ? '🔔' : '🔕'} Browser Notifications
+                  </h3>
+                  <p>Get instant alerts when new orders arrive.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  className={`settings-toggle ${notificationsEnabled ? 'active' : 'inactive'}`}
+                >
+                  <div className="settings-toggle-thumb" />
+                </button>
+              </div>
+              
+              <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.75rem', border: '1px solid #e5e7eb' }}>
+                <p style={{ fontSize: '0.875rem', color: '#4b5563', lineHeight: '1.5' }}>
+                  <strong>Note:</strong> These alerts depend on your browser settings. If you don't receive alerts, please check if notifications are blocked for this site in your browser's address bar.
+                </p>
+              </div>
+            </div>
+
+            <div className="settings-modal-footer">
+              <button
+                onClick={() => setShowNotificationsModal(false)}
+                className="settings-modal-save"
+              >
+                Close Settings
               </button>
             </div>
           </div>

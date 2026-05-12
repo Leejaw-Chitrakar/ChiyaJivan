@@ -321,9 +321,56 @@
 .order-cart-line {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 13px;
-  color: #6b7280;
-  padding: 4px 0;
+  color: #3d2b1f;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.order-cart-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-cart-item-name {
+  font-weight: 700;
+  max-width: 200px;
+}
+
+.order-cart-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f3eee8;
+  padding: 2px 8px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.order-cart-qty-btn {
+  background: none;
+  border: none;
+  color: #ad4928;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.order-cart-qty-val {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ad4928;
+  min-width: 14px;
+  text-align: center;
+}
+
+.order-cart-item-price {
+  font-weight: 700;
+  color: #ad4928;
 }
 
 .order-cart-total-row {
@@ -501,4 +548,102 @@
   .order-item {
     padding: 16px;
   }
+}
+
+/* ── Flavor Selection Modal ── */
+.flavor-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.flavor-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 28px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: modalScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalScaleUp {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.flavor-modal-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #3d2b1f;
+  margin-bottom: 8px;
+}
+
+.flavor-modal-desc {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 24px;
+}
+
+.flavor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.flavor-btn {
+  padding: 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #fdfbf7;
+  color: #3d2b1f;
+  border: 2px solid #f0ebe5;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.flavor-btn:hover {
+  background: #f3eee8;
+  border-color: #ad4928;
+  color: #ad4928;
+}
+
+.flavor-btn:active {
+  transform: scale(0.95);
+}
+
+.flavor-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-family: inherit;
+}
+
+.flavor-cancel-btn:hover {
+  color: #ef4444;
 }

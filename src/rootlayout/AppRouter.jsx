@@ -5,6 +5,7 @@ import MenuPage from '../pages/MenuPage';
 import SocialPage from '../pages/SocialPage';
 import OrderPage from '../pages/OrderPage';
 import AdminDashboard from '../admin/AdminDashboard';
+import WaiterDashboard from '../waiter/WaiterDashboard';
 import AdminLogin from '../admin/AdminLogin';
 
 const router = createBrowserRouter([
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
   {
     path: '/order',
     element: <OrderPage />,
+  },
+  {
+    path: '/waiter',
+    element: <WaiterDashboard />,
   },
   {
     path: '/admin',

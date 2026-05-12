@@ -1,0 +1,575 @@
+.waiter-container {
+  min-height: 100vh;
+  background: #f9fafb;
+  font-family: 'Inter', sans-serif;
+  padding-bottom: 2rem;
+}
+
+.waiter-header {
+  background: #AD4928;
+  color: white;
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(173, 73, 40, 0.15);
+}
+
+.waiter-header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.waiter-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.waiter-status {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin: 0.25rem 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waiter-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.waiter-btn-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.waiter-btn-action.new {
+  background: white;
+  color: #AD4928;
+}
+
+.waiter-btn-action.cancel {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.waiter-bell-icon {
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.waiter-bell-icon:hover {
+  opacity: 1;
+}
+
+.waiter-main {
+  max-width: 800px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+.waiter-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.waiter-card {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02), 0 10px 15px -3px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f3f4f6;
+  position: relative;
+  overflow: hidden;
+}
+
+.waiter-card.status-Pending { border-left: 6px solid #6b7280; }
+.waiter-card.status-Preparing { border-left: 6px solid #d97706; }
+.waiter-card.status-Served { border-left: 6px solid #7c3aed; }
+
+.waiter-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.waiter-table-num {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.waiter-customer {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Status Stepper */
+.waiter-status-stepper {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.status-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.25;
+  transition: all 0.3s ease;
+}
+
+.status-step.active {
+  opacity: 1;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.status-step.Pending.active .step-dot { background: #6b7280; box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.1); }
+.status-step.Preparing.active .step-dot { background: #d97706; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.1); }
+.status-step.Served.active .step-dot { background: #7c3aed; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1); }
+
+.step-label {
+  font-size: 0.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+/* Sub-orders */
+.waiter-orders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.waiter-sub-order {
+  background: #f8fafc;
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid #f1f5f9;
+}
+
+.sub-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.sub-order-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.sub-order-status-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.sub-order-status-tag.Pending { background: #f1f5f9; color: #64748b; }
+.sub-order-status-tag.Preparing { background: #fffbeb; color: #d97706; }
+.sub-order-status-tag.Served { background: #f5f3ff; color: #7c3aed; }
+
+.sub-order-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.waiter-btn-small {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  font-weight: 800;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.waiter-btn-small.Pending { background: #64748b; }
+.waiter-btn-small.Preparing { background: #d97706; }
+.waiter-btn-small.Served { background: #7c3aed; }
+
+.waiter-btn-small:active { transform: scale(0.95); }
+
+.waiter-btn-primary.payment {
+  background: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waiter-items-list {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.waiter-item {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 1rem;
+  color: #374151;
+  padding: 0.35rem 0;
+}
+
+.waiter-item:not(:last-child) {
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.waiter-item-qty {
+  font-weight: 800;
+  color: #AD4928;
+  min-width: 1.5rem;
+}
+
+.waiter-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.waiter-total {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.waiter-btn-primary {
+  background: #AD4928;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 1rem;
+  font-weight: 800;
+  font-size: 0.875rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(173, 73, 40, 0.2);
+  transition: transform 0.1s;
+}
+
+.waiter-btn-primary:active {
+  transform: scale(0.95);
+}
+
+.waiter-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+}
+
+.waiter-empty h2 {
+  color: #374151;
+  margin: 1.5rem 0 0.5rem;
+}
+
+/* Modal */
+.waiter-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.waiter-modal {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.waiter-payment-btns {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.waiter-payment-btns button {
+  flex: 1;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waiter-payment-btns button:active {
+  background: #fdf2ed;
+  border-color: #AD4928;
+  color: #AD4928;
+}
+
+.waiter-btn-close {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .waiter-card {
+    padding: 1rem;
+  }
+  .waiter-table-num {
+    font-size: 1.25rem;
+  }
+}
+
+/* Order Taking Flow */
+.waiter-setup-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.waiter-setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.waiter-setup-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.waiter-setup-field select,
+.waiter-setup-field input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.waiter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.waiter-tab {
+  white-space: nowrap;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.waiter-tab.active {
+  background: #AD4928;
+  color: white;
+  border-color: #AD4928;
+}
+
+.waiter-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 5rem;
+}
+
+.waiter-menu-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.waiter-menu-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.waiter-menu-item-name {
+  display: block;
+  font-weight: 800;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.waiter-menu-item-price {
+  font-size: 0.75rem;
+  color: #AD4928;
+  font-weight: 700;
+}
+
+.waiter-menu-item-badge {
+  display: none; /* Replaced by controls */
+}
+
+.waiter-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fdf2ed;
+  padding: 0.2rem;
+  border-radius: 0.75rem;
+  flex-shrink: 0;
+}
+
+.waiter-qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 0.5rem;
+  border: none;
+  background: white;
+  color: #AD4928;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.waiter-qty-btn.minus {
+  color: #6b7280;
+}
+
+.waiter-qty-val {
+  font-weight: 800;
+  color: #AD4928;
+  font-size: 0.875rem;
+}
+
+.waiter-item-add-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #AD4928;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.waiter-cart-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  z-index: 60;
+}
+
+.waiter-cart-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.waiter-cart-count {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.waiter-cart-total {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.waiter-btn-submit {
+  background: #AD4928;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.waiter-flavor-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.waiter-flavor-grid button {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-weight: 800;
+  cursor: pointer;
+}

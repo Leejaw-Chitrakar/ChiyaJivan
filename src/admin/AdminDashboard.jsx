@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { getUserRole } from "../lib/firestoreService";
 import AdminLogin from "./AdminLogin";
 import AdminLayout from "./components/AdminLayout";
 import Overview from "./pages/Overview";
@@ -12,13 +13,18 @@ import SocialManager from "./pages/SocialManager";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Expenses from "./pages/Expenses";
+import SuperAdmin from "../superadmin/SuperAdmin";
+import KhataDashboard from "./pages/KhataDashboard";
 
 export default function AdminDashboard({ loginOnly = false }) {
+  // Initial check: if we have a session, assume authenticated but still check firebase
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem("isAdminAuth") === "true";
+    const hasSession = sessionStorage.getItem("isAdminAuth") === "true";
+    console.log("🔐 AdminDashboard: Initial Auth State from Session:", hasSession);
+    return hasSession;
   });
   const [userRole, setUserRole] = useState(() => {
-    return sessionStorage.getItem("userRole") || "admin";
+    return sessionStorage.getItem("userRole") || "loading";
   });
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
@@ -30,19 +36,54 @@ export default function AdminDashboard({ loginOnly = false }) {
 
   // Listen to genuine firebase auth state to prevent querying firestore without a token
   useEffect(() => {
+    console.log("🔐 AdminDashboard: Starting Auth Check...");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("🔐 AdminDashboard: Auth State Changed:", user ? `User: ${user.uid}` : "No User");
+
       if (user) {
         setIsAuthenticated(true);
         sessionStorage.setItem("isAdminAuth", "true");
         sessionStorage.setItem("adminUid", user.uid);
-        // Refresh role from session or firestore if needed
-        const storedRole = sessionStorage.getItem("userRole");
-        if (storedRole) setUserRole(storedRole);
+
+        // Fetch/Verify role with a timeout fallback
+        const verifyRole = async () => {
+          try {
+            // Set a timeout to prevent being stuck forever
+            const timeoutId = setTimeout(() => {
+              setUserRole(prev => (prev === "loading" ? "admin" : prev));
+            }, 5000);
+
+            const role = await getUserRole(user.uid);
+            clearTimeout(timeoutId);
+
+            console.log("🔐 AdminDashboard: Verified Role:", role);
+            setUserRole(role);
+            sessionStorage.setItem("userRole", role);
+          } catch (err) {
+            console.error("🔐 AdminDashboard: Role verification failed:", err);
+            // Default to admin if verification fails
+            setUserRole("admin");
+            sessionStorage.setItem("userRole", "admin");
+          }
+        };
+        verifyRole();
+
+        console.log("🔐 AdminDashboard: User verified, access granted.");
       } else {
-        setIsAuthenticated(false);
-        sessionStorage.removeItem("isAdminAuth");
-        sessionStorage.removeItem("adminUid");
-        sessionStorage.removeItem("userRole");
+        // Only clear if we didn't just log in (check session storage)
+        // This avoids a flicker or race condition during sign-in redirects
+        const hasSession = sessionStorage.getItem("isAdminAuth") === "true";
+        if (!hasSession) {
+          console.log("🔐 AdminDashboard: No user and no session. Redirecting to login.");
+          setIsAuthenticated(false);
+          sessionStorage.removeItem("adminUid");
+          sessionStorage.removeItem("userRole");
+        } else {
+          console.log("🔐 AdminDashboard: No Firebase user yet, but session exists. Waiting...");
+          // We don't set isAuthenticated to false yet, we wait for next event
+          // or we can set it to false after a timeout if needed.
+          // For now, let's just NOT clear it if we have a session.
+        }
       }
       setIsAuthChecking(false);
     });
@@ -90,8 +131,10 @@ export default function AdminDashboard({ loginOnly = false }) {
         <Route path="tables" element={<TableQRManager />} />
         <Route path="social" element={<SocialManager />} />
         <Route path="history" element={<History />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="settings" element={<Settings userRole={userRole} />} />
         <Route path="expenses" element={<Expenses />} />
+        <Route path="khata" element={<KhataDashboard userRole={userRole} />} />
+        <Route path="super" element={userRole === 'superadmin' ? <SuperAdmin /> : <Navigate to="dashboard" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>

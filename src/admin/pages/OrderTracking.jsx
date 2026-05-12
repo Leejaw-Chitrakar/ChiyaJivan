@@ -11,6 +11,8 @@ import {
   Trash2,
   Eye,
   X,
+  ArrowLeft,
+  RefreshCcw,
 } from "lucide-react";
 import {
   subscribeToOrders,
@@ -20,6 +22,10 @@ import {
   updateTableOccupancy,
   deleteAllOrders,
   subscribeToShopSettings,
+  updateOrderItems,
+  subscribeToMenuItems,
+  resetAllTables,
+  recordKhataPayment,
 } from "../../lib/firestoreService";
 import "../styles/OrderTracking.css";
 
@@ -44,6 +50,11 @@ const STATUS = {
     label: "Completed",
     next: null,
   },
+  Cancelled: {
+    icon: X,
+    label: "Cancelled",
+    next: null,
+  },
 };
 
 function timeAgo(timestamp) {
@@ -60,6 +71,7 @@ function timeAgo(timestamp) {
 
 const statusStyles = {
   Completed: { bg: "#ecfdf5", color: "#059669", border: "#d1fae5" },
+  Cancelled: { bg: "#fef2f2", color: "#dc2626", border: "#fee2e2" },
   Served: { bg: "#f5f3ff", color: "#7c3aed", border: "#ede9fe" },
   Preparing: { bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
   Pending: { bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
@@ -77,8 +89,16 @@ export default function OrderTracking() {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [paymentNote, setPaymentNote] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [cashReceived, setCashReceived] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isTableEmpty, setIsTableEmpty] = useState(true);
+  const [menuItems, setMenuItems] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItems, setEditingItems] = useState([]);
+  const [editingOrderId, setEditingOrderId] = useState(null); // The specific order doc ID we are editing
+  const audioRef = useRef(null);
 
   // Subscribe to shop settings for table names
   useEffect(() => {
@@ -91,11 +111,38 @@ export default function OrderTracking() {
     return () => unsubSettings();
   }, []);
 
+  // Subscribe to menu items
+  useEffect(() => {
+    const unsubMenu = subscribeToMenuItems((items) => {
+      setMenuItems(items);
+    });
+    return () => unsubMenu();
+  }, []);
+
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      console.log("🔔 Playing notification sound...");
+      audioRef.current.play().catch(e => {
+        console.error("❌ Audio play failed:", e);
+        // Fallback or alert if needed
+      });
+    } else {
+      console.error("❌ audioRef.current is null!");
+    }
+  };
+
   // Subscribe to real-time Firestore updates
   useEffect(() => {
-    let prevCount = null;
+    let lastOrderCount = null;
     const unsub = subscribeToOrders((liveOrders) => {
-      prevCount = liveOrders.length;
+      console.log("📦 Orders updated. Count:", liveOrders.length, "Prev:", lastOrderCount);
+
+      // If we have more orders than before, play sound
+      if (lastOrderCount !== null && liveOrders.length > lastOrderCount) {
+        playNotificationSound();
+      }
+
+      lastOrderCount = liveOrders.length;
       setOrders(liveOrders);
       setIsLive(true);
     });
@@ -136,6 +183,105 @@ export default function OrderTracking() {
     }
   };
 
+  const handleCancelTable = async (tableOrders) => {
+    if (window.confirm("Are you sure you want to CANCEL all orders for this table?")) {
+      try {
+        const promises = tableOrders.map(o => updateOrderStatus(o.id, "Cancelled"));
+        await Promise.all(promises);
+      } catch (err) {
+        console.error("Failed to cancel table orders:", err);
+      }
+    }
+  };
+
+  const handleCancelSingleOrder = async (orderId) => {
+    if (window.confirm("Are you sure you want to cancel this order?")) {
+      try {
+        await updateOrderStatus(orderId, "Cancelled");
+        setSelectedOrder(null);
+      } catch (err) {
+        console.error("Failed to cancel order:", err);
+      }
+    }
+  };
+
+  const handleStartEditing = (order) => {
+    setEditingOrderId(order.id);
+    setEditingItems([...(order.items || [])]);
+    setIsEditing(true);
+  };
+
+  const handleUpdateItemQty = (index, delta) => {
+    setEditingItems(prev => {
+      const updated = [...prev];
+      const newQty = (updated[index].qty || 0) + delta;
+      if (newQty > 0) {
+        updated[index].qty = newQty;
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveItem = (index) => {
+    setEditingItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddItem = (menuItem) => {
+    setEditingItems(prev => {
+      // Check if item already exists
+      const existingIdx = prev.findIndex(i => i.id === menuItem.id);
+      if (existingIdx > -1) {
+        const updated = [...prev];
+        updated[existingIdx].qty += 1;
+        return updated;
+      }
+      return [...prev, {
+        id: menuItem.id,
+        name: menuItem.name,
+        price: menuItem.price,
+        qty: 1,
+        category: menuItem.category
+      }];
+    });
+  };
+
+  const handleSaveEditedOrder = async () => {
+    if (!editingOrderId) return;
+    try {
+      const newTotal = editingItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      await updateOrderItems(editingOrderId, editingItems, newTotal);
+
+      // Update the selectedOrder locally if it's the one we're viewing
+      if (selectedOrder) {
+        const updatedOrders = selectedOrder.orders.map(o =>
+          o.id === editingOrderId ? { ...o, items: editingItems, total: newTotal } : o
+        );
+        // Recalculate combined items for the table group
+        const combinedItemsMap = {};
+        updatedOrders.forEach(o => {
+          o.items.forEach(i => {
+            if (combinedItemsMap[i.id]) combinedItemsMap[i.id].qty += i.qty;
+            else combinedItemsMap[i.id] = { ...i };
+          });
+        });
+
+        setSelectedOrder({
+          ...selectedOrder,
+          orders: updatedOrders,
+          items: Object.values(combinedItemsMap),
+          total: updatedOrders.reduce((sum, o) => sum + o.total, 0)
+        });
+      }
+
+      setIsEditing(false);
+      setEditingOrderId(null);
+      alert("Order updated successfully!");
+    } catch (err) {
+      console.error("Failed to save edited order:", err);
+      alert("Failed to update order.");
+    }
+  };
+
   // Grouping logic
   const tableGroups = orders.reduce((acc, order) => {
     const tableId = order.table;
@@ -153,7 +299,7 @@ export default function OrderTracking() {
       };
     }
     acc[tableId].orders.push(order);
-    if (order.status !== "Completed") acc[tableId].hasLiveOrders = true;
+    if (order.status !== "Completed" && order.status !== "Cancelled") acc[tableId].hasLiveOrders = true;
 
     // Keep sub-orders sorted by time
     acc[tableId].orders.sort((a, b) => a.createdAt?.toDate() - b.createdAt?.toDate());
@@ -174,11 +320,12 @@ export default function OrderTracking() {
     Preparing: tableList.filter(t => t.orders.some(o => o.status === "Preparing")).length,
     Served: tableList.filter(t => t.orders.some(o => o.status === "Served")).length,
     Completed: orders.filter(o => o.status === "Completed").length,
+    Cancelled: orders.filter(o => o.status === "Cancelled").length,
   };
 
   const filteredTables = (() => {
     if (activeFilter === "All") return tableList.filter(t => t.hasLiveOrders);
-    
+
     if (activeFilter === "Completed") {
       // Return individual completed orders as "pseudo-tables" so they list separately
       return orders
@@ -196,18 +343,56 @@ export default function OrderTracking() {
           isSingleOrder: true
         }));
     }
-    
+
+    if (activeFilter === "Cancelled") {
+      return orders
+        .filter(o => o.status === "Cancelled")
+        .map(o => ({
+          tableId: o.id,
+          tableName: tableNames[o.table] || `Table ${o.table}`,
+          tableNum: o.table,
+          orders: [o],
+          total: o.total,
+          items: o.items || [],
+          customer: o.customer,
+          createdAt: o.createdAt,
+          note: o.note,
+          isSingleOrder: true
+        }));
+    }
+
     return tableList.filter(t => t.orders.some(o => o.status === activeFilter));
   })();
 
   return (
     <div className="order-tracking-container">
+      {/* Audio for notifications */}
+      <audio ref={audioRef} src="/bell-chime.mp3" preload="auto" />
+
       {/* Header */}
       <div className="order-tracking-header">
         <div>
           <h1 className="order-tracking-title">Order Tracking</h1>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={playNotificationSound}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              fontSize: "13px",
+              fontWeight: "600",
+              background: "#fdf2ed",
+              color: "#ad4928",
+              border: "1px solid #fce3d9",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <Bell size={16} /> Test Sound
+          </button>
           {orders.length > 0 && (
             <button
               onClick={handleClearOrders}
@@ -229,7 +414,7 @@ export default function OrderTracking() {
 
       {/* Status Summary Cards */}
       <div className="order-summary-grid">
-        {["Pending", "Preparing", "Served", "Completed"].map((status) => {
+        {["Pending", "Preparing", "Served", "Completed", "Cancelled"].map((status) => {
           const cfg = STATUS[status];
           const Icon = cfg.icon;
           return (
@@ -271,10 +456,10 @@ export default function OrderTracking() {
           // Determine the "main" status to show for the table card styling
           // Preference: Pending > Preparing > Served
           const statuses = table.orders.map(o => o.status);
-          const priorityStatus = 
+          const priorityStatus =
             statuses.includes("Pending") ? "Pending" :
-            statuses.includes("Preparing") ? "Preparing" :
-            statuses.includes("Served") ? "Served" : "Completed";
+              statuses.includes("Preparing") ? "Preparing" :
+                statuses.includes("Served") ? "Served" : "Completed";
 
           const itemsSummary = table.items.map(i => `${i.name} x${i.qty}`).join(", ");
 
@@ -302,11 +487,11 @@ export default function OrderTracking() {
                   {table.customer && table.customer !== table.tableName && (
                     <p className="order-card-customer" style={{ marginBottom: 6 }}>{table.customer}</p>
                   )}
-                  <div style={{ 
-                    background: "#f9fafb", 
-                    padding: "12px", 
-                    borderRadius: 12, 
-                    border: "1px solid #f3f4f6" 
+                  <div style={{
+                    background: "#f9fafb",
+                    padding: "12px",
+                    borderRadius: 12,
+                    border: "1px solid #f3f4f6"
                   }}>
                     <p className="order-card-items" style={{ fontSize: 15, color: "#3d2b1f", fontWeight: "600", lineHeight: 1.5 }}>
                       {table.items.map(i => `${i.name} x${i.qty}`).join(", ")}
@@ -317,19 +502,27 @@ export default function OrderTracking() {
                   )}
                 </div>
 
-                <div className="order-card-action-section" style={{ borderTop: "1px dashed #e5e7eb", paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div className="flex flex-col gap-1">
-                    <p style={{ fontSize: 10, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase' }}>Table Status</p>
-                    <div className="flex gap-2 flex-wrap">
+                <div className="order-card-action-section" style={{
+                  borderTop: "1px dashed #e5e7eb",
+                  paddingTop: 16,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <p style={{ fontSize: 9, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Table Status</p>
+                    <div>
                       {(() => {
                         const statuses = table.orders.map(o => o.status);
                         let displayStatus = "Completed";
                         if (statuses.includes("Pending")) displayStatus = "Pending";
                         else if (statuses.includes("Preparing")) displayStatus = "Preparing";
                         else if (statuses.includes("Served")) displayStatus = "Served";
-                        
+
                         return (
-                          <span className={`order-card-badge ${displayStatus}`} style={{ margin: 0, padding: '4px 10px', fontSize: '10px' }}>
+                          <span className={`order-card-badge ${displayStatus}`} style={{ margin: 0, padding: '4px 12px', fontSize: '11px', borderRadius: 8 }}>
                             {displayStatus}
                           </span>
                         );
@@ -337,38 +530,63 @@ export default function OrderTracking() {
                     </div>
                   </div>
 
-                  {/* Single Bulk Action Button */}
-                  {(() => {
-                    const statuses = table.orders.map(o => o.status);
-                    
-                    // If everything is completed, don't show any action button
-                    if (statuses.every(s => s === "Completed")) return null;
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {/* Single Bulk Action Button */}
+                    {(() => {
+                      const statuses = table.orders.map(o => o.status);
 
-                    let primaryStatus = "Served";
-                    if (statuses.includes("Pending")) primaryStatus = "Pending";
-                    else if (statuses.includes("Preparing")) primaryStatus = "Preparing";
+                      // If everything is completed or cancelled, don't show any action button
+                      if (statuses.every(s => s === "Completed" || s === "Cancelled")) return null;
 
-                    const cfg = STATUS[primaryStatus];
-                    if (!cfg.next) return null;
+                      let primaryStatus = "Served";
+                      if (statuses.includes("Pending")) primaryStatus = "Pending";
+                      else if (statuses.includes("Preparing")) primaryStatus = "Preparing";
 
-                    return (
+                      const cfg = STATUS[primaryStatus];
+                      if (!cfg || !cfg.next) return null;
+
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (cfg.next === "Completed") {
+                              setPaymentModalOrder(table);
+                              setIsTableEmpty(true); // Default to empty after pay
+                            } else {
+                              handleBulkStatusChange(table.orders, primaryStatus, cfg.next);
+                            }
+                          }}
+                          className={`order-card-btn ${primaryStatus}`}
+                          style={{ padding: '8px 18px', fontSize: '11px', fontWeight: 800, borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        >
+                          {cfg.label}
+                        </button>
+                      );
+                    })()}
+
+                    {/* Cancel Table Button */}
+                    {table.hasLiveOrders && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (cfg.next === "Completed") {
-                            setPaymentModalOrder(table);
-                            setIsTableEmpty(true); // Default to empty after pay
-                          } else {
-                            handleBulkStatusChange(table.orders, primaryStatus, cfg.next);
-                          }
+                          handleCancelTable(table.orders);
                         }}
-                        className={`order-card-btn ${primaryStatus}`}
-                        style={{ padding: '8px 18px', fontSize: '11px', fontWeight: 800, borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        className="order-card-btn Cancelled"
+                        style={{
+                          padding: '8px 12px',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          borderRadius: 10,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca'
+                        }}
                       >
-                        {cfg.label}
+                        Cancel All
                       </button>
-                    );
-                  })()}
+                    )}
+                  </div>
                 </div>
 
                 {/* Total */}
@@ -435,11 +653,12 @@ export default function OrderTracking() {
             <div
               style={{
                 padding: "14px 20px",
-                background: "#AD4928",
+                background: isEditing ? "#3b82f6" : "#AD4928",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                transition: "background 0.3s"
               }}
             >
               <div>
@@ -447,7 +666,7 @@ export default function OrderTracking() {
                   className="font-bold uppercase"
                   style={{ fontSize: 8, letterSpacing: "0.2em", opacity: 0.6 }}
                 >
-                  Order Details
+                  {isEditing ? "Editing Order" : "Order Details"}
                 </p>
                 <h3
                   className="font-bold"
@@ -457,7 +676,13 @@ export default function OrderTracking() {
                 </h3>
               </div>
               <button
-                onClick={() => setSelectedOrder(null)}
+                onClick={() => {
+                  if (isEditing) {
+                    setIsEditing(false);
+                  } else {
+                    setSelectedOrder(null);
+                  }
+                }}
                 style={{
                   padding: 8,
                   borderRadius: 12,
@@ -467,7 +692,7 @@ export default function OrderTracking() {
                   color: "#fff",
                 }}
               >
-                <X size={18} />
+                {isEditing ? <ArrowLeft size={18} /> : <X size={18} />}
               </button>
             </div>
 
@@ -478,156 +703,111 @@ export default function OrderTracking() {
                 display: "flex",
                 flexDirection: "column",
                 gap: 12,
+                maxHeight: "70vh",
+                overflowY: "auto"
               }}
             >
-              {/* Customer & Total Orders */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <p
-                    className="font-bold uppercase"
-                    style={{
-                      fontSize: 10,
-                      color: "#9ca3af",
-                      letterSpacing: "0.15em",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Customer
-                  </p>
-                  <p
-                    className="font-bold"
-                    style={{ fontSize: 13, color: "#3d2b1f" }}
-                  >
-                    {selectedOrder.customer && selectedOrder.customer !== selectedOrder.tableName ? selectedOrder.customer : "Anonymous"}
-                  </p>
-                </div>
-                <div className="text-right">
-                   <p className="font-bold uppercase" style={{ fontSize: 9, color: "#9ca3af", letterSpacing: "0.15em", marginBottom: 2 }}>Orders</p>
-                   <p className="font-bold" style={{ fontSize: 13, color: "#AD4928" }}>{selectedOrder.orders?.length || 1}</p>
-                </div>
-              </div>
-
-              {/* Items */}
-              <div>
-                <p
-                  className="font-bold uppercase"
-                  style={{
-                    fontSize: 10,
-                    color: "#9ca3af",
-                    letterSpacing: "0.15em",
-                    marginBottom: 10,
-                  }}
-                >
-                  Combined Items
-                </p>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  {(selectedOrder.items || []).map((item, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "6px 10px",
-                        background: "#fdfbf7",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <div>
-                        <p
-                          className="font-bold"
-                          style={{ fontSize: 12, color: "#3d2b1f" }}
-                        >
-                          {item.name}
-                        </p>
-                        <p style={{ fontSize: 10, color: "#9ca3af" }}>
-                          Qty: {item.qty}
-                        </p>
+              {!isEditing ? (
+                <>
+                  {/* View Mode: List Individual Orders */}
+                  {selectedOrder.orders?.map((order, idx) => (
+                    <div key={order.id} style={{ border: "1px solid #f3f4f6", borderRadius: 12, padding: 12, background: "#fff" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af" }}>ORDER #{idx + 1}</p>
+                        {order.status !== "Completed" && order.status !== "Cancelled" && (
+                          <button
+                            onClick={() => handleStartEditing(order)}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: "4px 8px",
+                              background: "#eff6ff",
+                              color: "#2563eb",
+                              border: "1px solid #dbeafe",
+                              borderRadius: 6,
+                              cursor: "pointer"
+                            }}
+                          >
+                            Modify
+                          </button>
+                        )}
                       </div>
-                      <p
-                        className="font-bold"
-                        style={{ fontSize: 12, color: "#AD4928" }}
-                      >
-                        Rs. {item.price * item.qty}
-                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {order.items?.map((item, i) => (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                            <span>{item.name} x{item.qty}</span>
+                            <span style={{ fontWeight: 600 }}>Rs. {item.price * item.qty}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
-                </div>
-              </div>
 
-              {/* Note */}
-              {selectedOrder.note && (
-                <div>
-                  <p
-                    className="font-bold uppercase"
-                    style={{
-                      fontSize: 10,
-                      color: "#9ca3af",
-                      letterSpacing: "0.15em",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Notes
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "#6b7280",
-                      fontStyle: "italic",
-                      padding: "10px 14px",
-                      background: "#fffbeb",
-                      borderRadius: 12,
-                      border: "1px solid #fde68a",
-                    }}
-                  >
-                    📝 {selectedOrder.note}
-                  </p>
-                </div>
+                  <div style={{ marginTop: 8, paddingTop: 12, borderTop: "2px solid #f3f4f6" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase" }}>Total Bill</p>
+                      <p style={{ fontSize: 20, fontWeight: 800, color: "#3d2b1f" }}>Rs. {selectedOrder.total}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Edit Mode: Modify Items */}
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", marginBottom: 12 }}>Modify Items</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {editingItems.map((item, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "#f9fafb", padding: 8, borderRadius: 10 }}>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700 }}>{item.name}</p>
+                            <p style={{ fontSize: 10, color: "#9ca3af" }}>Rs. {item.price}</p>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <button onClick={() => handleUpdateItemQty(i, -1)} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>-</button>
+                            <span style={{ fontSize: 12, fontWeight: 700, minWidth: 16, textAlign: "center" }}>{item.qty}</span>
+                            <button onClick={() => handleUpdateItemQty(i, 1)} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer" }}>+</button>
+                            <button onClick={() => handleRemoveItem(i)} style={{ marginLeft: 4, color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Add New Item Section */}
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed #e5e7eb" }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", marginBottom: 8 }}>Add New Item</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 150, overflowY: "auto", padding: "4px" }}>
+                      {menuItems.filter(mi => mi.stock !== false).map(mi => (
+                        <button
+                          key={mi.id}
+                          onClick={() => handleAddItem(mi)}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "8px 12px",
+                            background: "#fff",
+                            border: "1px solid #f3f4f6",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            fontSize: 11,
+                            textAlign: "left"
+                          }}
+                        >
+                          <span style={{ fontWeight: 600 }}>{mi.name}</span>
+                          <span style={{ color: "#AD4928" }}>Rs. {mi.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 8, padding: 12, background: "#fffbeb", borderRadius: 12, border: "1px solid #fde68a" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "#d97706" }}>New Total</p>
+                      <p style={{ fontSize: 18, fontWeight: 800, color: "#3d2b1f" }}>Rs. {editingItems.reduce((sum, item) => sum + (item.price * item.qty), 0)}</p>
+                    </div>
+                  </div>
+                </>
               )}
-
-              {/* Total */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "14px 0",
-                  borderTop: "2px solid #f3f4f6",
-                }}
-              >
-                <p
-                  className="font-bold uppercase"
-                  style={{
-                    fontSize: 12,
-                    color: "#9ca3af",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  Total Bill
-                </p>
-                <p
-                  className="font-bold"
-                  style={{ fontSize: 24, color: "#3d2b1f" }}
-                >
-                  Rs. {selectedOrder.total}
-                </p>
-              </div>
-
-              {/* Time */}
-              <p
-                className="flex items-center"
-                style={{ fontSize: 12, color: "#9ca3af", gap: 4 }}
-              >
-                <Clock size={12} /> First ordered {timeAgo(selectedOrder.createdAt)}
-              </p>
             </div>
 
             {/* Modal Footer */}
@@ -639,29 +819,84 @@ export default function OrderTracking() {
                 gap: 10,
               }}
             >
-              <button
-                onClick={() => setSelectedOrder(null)}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: 14,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  background: "#AD4928",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#8f3d21")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "#AD4928")
-                }
-              >
-                Close Details
-              </button>
+              {!isEditing ? (
+                <>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 14,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      background: "#f3f4f6",
+                      color: "#4b5563",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    Close
+                  </button>
+                  {selectedOrder.hasLiveOrders && (
+                    <button
+                      onClick={() => {
+                        handleCancelTable(selectedOrder.orders);
+                        setSelectedOrder(null);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: 14,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        background: "#fee2e2",
+                        color: "#dc2626",
+                        border: "1px solid #fecaca",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      Cancel All
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 14,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      background: "#f3f4f6",
+                      color: "#4b5563",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={handleSaveEditedOrder}
+                    style={{
+                      flex: 2,
+                      padding: "12px",
+                      borderRadius: 14,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      background: "#3b82f6",
+                      color: "#fff",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -694,30 +929,30 @@ export default function OrderTracking() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ padding: "24px 28px", background: "#fdfbf7", borderBottom: "1px solid #f3f4f6" }}>
-              <h3 className="font-bold" style={{ fontSize: 20, color: "#3d2b1f" }}>Confirm Payment</h3>
-              <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ padding: "16px 20px", background: "#fdfbf7", borderBottom: "1px solid #f3f4f6" }}>
+              <h3 className="font-bold" style={{ fontSize: 16, color: "#3d2b1f" }}>Confirm Payment</h3>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                 Complete order for {paymentModalOrder.tableName || `Table ${paymentModalOrder.table || paymentModalOrder.tableId}`}
               </p>
             </div>
-            
-            <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+            <div style={{ padding: "14px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
-                <p className="font-bold" style={{ fontSize: 13, color: "#3d2b1f", marginBottom: 8 }}>Payment Method</p>
-                <div style={{ display: "flex", gap: 10 }}>
+                <p className="font-bold" style={{ fontSize: 11, color: "#3d2b1f", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Payment Method</p>
+                <div style={{ display: "flex", gap: 8 }}>
                   {["Cash", "Online"].map(method => (
                     <button
                       key={method}
                       onClick={() => setPaymentMethod(method)}
                       style={{
                         flex: 1,
-                        padding: "10px",
-                        borderRadius: 12,
+                        padding: "7px",
+                        borderRadius: 10,
                         border: `2px solid ${paymentMethod === method ? "#AD4928" : "#e5e7eb"}`,
                         background: paymentMethod === method ? "#fdf2ed" : "#fff",
                         color: paymentMethod === method ? "#AD4928" : "#6b7280",
                         fontWeight: "bold",
-                        fontSize: 14,
+                        fontSize: 13,
                         cursor: "pointer",
                         transition: "all 0.2s"
                       }}
@@ -727,76 +962,120 @@ export default function OrderTracking() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
-                <p className="font-bold" style={{ fontSize: 13, color: "#3d2b1f", marginBottom: 8 }}>Note (Optional)</p>
+                <p className="font-bold" style={{ fontSize: 11, color: "#3d2b1f", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Note (Optional)</p>
                 <textarea
                   value={paymentNote}
                   onChange={(e) => setPaymentNote(e.target.value)}
-                  placeholder="e.g. Needs exact change, paid via eSewa, tip included..."
+                  placeholder="e.g. Paid via eSewa, tip included..."
                   style={{
                     width: "100%",
-                    padding: "12px",
-                    borderRadius: 12,
+                    padding: "8px 10px",
+                    borderRadius: 10,
                     border: "1px solid #e5e7eb",
                     background: "#f9fafb",
-                    fontSize: 14,
-                    minHeight: 80,
-                    resize: "none"
+                    fontSize: 12,
+                    minHeight: 52,
+                    resize: "none",
+                    outline: "none",
                   }}
                 />
               </div>
 
-              <div>
-                <p className="font-bold" style={{ fontSize: 13, color: "#3d2b1f", marginBottom: 8 }}>Discount Given (Rs.)</p>
-                <input
-                  type="number"
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(e.target.value)}
-                  placeholder="0"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: 12,
-                    border: "1px solid #e5e7eb",
-                    background: "#f9fafb",
-                    fontSize: 14,
-                  }}
-                />
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <p className="font-bold" style={{ fontSize: 11, color: "#3d2b1f", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Discount (Rs.)</p>
+                  <input
+                    type="number"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                    placeholder="0"
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#f9fafb", fontSize: 13, outline: "none" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p className="font-bold" style={{ fontSize: 11, color: "#3d2b1f", marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Cash Received (Rs.)</p>
+                  <input
+                    type="number"
+                    value={cashReceived}
+                    onChange={(e) => setCashReceived(e.target.value)}
+                    placeholder={`Rs. ${paymentModalOrder.total - (parseFloat(discountAmount) || 0)}`}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      border: cashReceived !== "" && Number(cashReceived) < (paymentModalOrder.total - (parseFloat(discountAmount) || 0))
+                        ? "1.5px solid #AD4928"
+                        : "1px solid #e5e7eb",
+                      background: "#f9fafb",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      outline: "none",
+                    }}
+                  />
+                </div>
               </div>
+
+              {cashReceived !== "" && Number(cashReceived) < (paymentModalOrder.total - (parseFloat(discountAmount) || 0)) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "#fef9f7", border: "1px solid #fde3d5", borderRadius: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>⚠️</span>
+                    <p style={{ fontSize: 11, fontWeight: 800, color: "#AD4928" }}>
+                      Due: Rs. {Math.max(0, (paymentModalOrder.total - (parseFloat(discountAmount) || 0)) - Number(cashReceived)).toFixed(0)} — will be recorded to Khata
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Customer Name"
+                      style={{ flex: 1, padding: "5px 9px", borderRadius: 8, border: "1px solid #fde3d5", background: "#fff", fontSize: 11, outline: "none" }}
+                    />
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="Phone (optional)"
+                      style={{ flex: 1, padding: "5px 9px", borderRadius: 8, border: "1px solid #fde3d5", background: "#fff", fontSize: 11, outline: "none" }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Table Empty Toggle */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 12, 
-                  padding: '12px 16px', 
-                  background: isTableEmpty ? '#f0fdf4' : '#fff7ed', 
-                  borderRadius: 12,
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 12px',
+                  background: isTableEmpty ? '#f0fdf4' : '#fff7ed',
+                  borderRadius: 10,
                   border: `1px solid ${isTableEmpty ? '#bcf0da' : '#ffedd5'}`,
                   cursor: 'pointer'
                 }}
                 onClick={() => setIsTableEmpty(!isTableEmpty)}
               >
-                <input 
-                  type="checkbox" 
-                  checked={isTableEmpty} 
+                <input
+                  type="checkbox"
+                  checked={isTableEmpty}
                   readOnly
-                  style={{ width: 18, height: 18, accentColor: '#AD4928' }} 
+                  style={{ width: 15, height: 15, accentColor: '#AD4928' }}
                 />
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: isTableEmpty ? '#166534' : '#9a3412' }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: isTableEmpty ? '#166534' : '#9a3412' }}>
                     {isTableEmpty ? "Table is Empty" : "Table is Still Occupied"}
                   </p>
-                  <p style={{ fontSize: 11, color: isTableEmpty ? '#15803d' : '#c2410c', opacity: 0.8 }}>
-                    {isTableEmpty ? "Mark as Free on Floor Map" : "Keep as Occupied on Floor Map"}
+                  <p style={{ fontSize: 10, color: isTableEmpty ? '#15803d' : '#c2410c', opacity: 0.8 }}>
+                    {isTableEmpty ? "Mark as Free" : "Keep as Occupied"}
                   </p>
                 </div>
               </div>
             </div>
-            
-            <div style={{ padding: "16px 28px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
+
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 8 }}>
               <button
                 onClick={() => setPaymentModalOrder(null)}
                 style={{ flex: 1, padding: "12px", borderRadius: 12, background: "#f3f4f6", color: "#4b5563", border: "none", fontWeight: "bold", cursor: "pointer" }}
@@ -808,23 +1087,46 @@ export default function OrderTracking() {
                 onClick={async () => {
                   setIsSubmittingPayment(true);
                   try {
-                    const paymentData = { 
-                      paymentMethod, 
-                      paymentNote, 
-                      discountAmount: parseFloat(discountAmount) || 0 
-                    };
+                    const finalTotal = paymentModalOrder.total - (parseFloat(discountAmount) || 0);
+                    const paid = cashReceived === "" ? finalTotal : Number(cashReceived);
+                    const balanceDue = Math.max(0, finalTotal - paid);
+                    const isKhata = balanceDue > 0;
 
-                    if (paymentModalOrder.orders) {
-                      const orderIds = paymentModalOrder.orders.map(o => o.id);
-                      await bulkCompleteTable(orderIds, paymentData);
+                    if (isKhata) {
+                      // Record as partial/unpaid Khata entry for each order
+                      const orders = paymentModalOrder.orders || [paymentModalOrder];
+                      for (const order of orders) {
+                        const orderBalance = Math.round((order.total / paymentModalOrder.total) * balanceDue);
+                        const orderPaid = order.total - orderBalance;
+                        await recordKhataPayment({
+                          orderId: order.id,
+                          orderTotal: order.total,
+                          cashReceived: Math.max(0, orderPaid),
+                          customerName: customerName || paymentModalOrder.customer || "Guest",
+                          customerPhone,
+                          tableNum: paymentModalOrder.tableId || paymentModalOrder.table,
+                          adminEmail: import.meta.env.VITE_ADMIN_EMAIL || "Admin",
+                        });
+                      }
                     } else {
-                      await updateOrderPaymentAndStatus(paymentModalOrder.id, "Completed", paymentMethod, paymentNote, discountAmount);
+                      // Full payment — normal flow
+                      const paymentData = { paymentMethod, paymentNote, discountAmount: parseFloat(discountAmount) || 0 };
+                      if (paymentModalOrder.orders) {
+                        const orderIds = paymentModalOrder.orders.map(o => o.id);
+                        await bulkCompleteTable(orderIds, paymentData);
+                      } else {
+                        await updateOrderPaymentAndStatus(paymentModalOrder.id, "Completed", paymentMethod, paymentNote, discountAmount);
+                      }
                     }
-                    
-                    // Update table occupancy status
+
+                    // Update table occupancy
                     const finalTableId = paymentModalOrder.table || paymentModalOrder.tableId;
                     await updateTableOccupancy(finalTableId, !isTableEmpty);
-                    
+
+                    // Reset state
+                    setCashReceived("");
+                    setCustomerName("");
+                    setCustomerPhone("");
                     setPaymentModalOrder(null);
                   } catch (err) {
                     console.error("Failed to complete table payment:", err);
@@ -835,7 +1137,11 @@ export default function OrderTracking() {
                 }}
                 style={{ flex: 2, padding: "12px", borderRadius: 12, background: "#AD4928", color: "#fff", border: "none", fontWeight: "bold", cursor: "pointer", opacity: isSubmittingPayment ? 0.7 : 1 }}
               >
-                {isSubmittingPayment ? "Completing..." : `Complete & Pay Rs. ${paymentModalOrder.total - (parseFloat(discountAmount) || 0)}`}
+                {isSubmittingPayment ? "Processing..." : (
+                  cashReceived !== "" && Number(cashReceived) < (paymentModalOrder.total - (parseFloat(discountAmount) || 0))
+                    ? `Record Khata · Due Rs. ${(paymentModalOrder.total - (parseFloat(discountAmount) || 0) - Number(cashReceived)).toFixed(0)}`
+                    : `Complete & Pay Rs. ${paymentModalOrder.total - (parseFloat(discountAmount) || 0)}`
+                )}
               </button>
             </div>
           </div>

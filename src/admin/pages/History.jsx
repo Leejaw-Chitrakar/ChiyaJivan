@@ -23,7 +23,8 @@ export default function History() {
   const [tableNames, setTableNames] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState("today"); // today, yesterday, 7days, all
+  const [filterType, setFilterType] = useState("today"); // today, yesterday, 7days, all, custom
+  const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
   const [stats, setStats] = useState({
     revenue: 0,
     count: 0,
@@ -46,7 +47,7 @@ export default function History() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `chiya_jivan_history_${filterType}.csv`);
+    link.setAttribute("download", `chiya_jivan_history_${filterType === 'custom' ? customDate : filterType}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -68,7 +69,7 @@ export default function History() {
       }
     });
     return () => unsub();
-  }, [filterType]);
+  }, [filterType, customDate]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -87,24 +88,28 @@ export default function History() {
       start.setDate(start.getDate() - 7);
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
+    } else if (filterType === "custom") {
+      const [year, month, day] = customDate.split('-').map(Number);
+      start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      end = new Date(year, month - 1, day, 23, 59, 59, 999);
     } else {
       start = null;
       end = null;
     }
 
     const data = await getOrdersByDateRange(start, end);
-    const completedOrders = data.filter(
+    const successfulOrders = data.filter(
       (o) => o.status === "Completed" || o.status === "Served",
     );
 
     // Calculate stats
-    const revenue = completedOrders.reduce(
+    const revenue = successfulOrders.reduce(
       (sum, o) => sum + (Number(o.total) || 0),
       0,
     );
-    const count = completedOrders.length;
+    const count = successfulOrders.length;
     const avg = count > 0 ? Math.round(revenue / count) : 0;
-    const items = completedOrders.reduce((sum, o) => {
+    const items = successfulOrders.reduce((sum, o) => {
       // Assuming items is an array or string summary
       return sum + (o.items?.length || 0);
     }, 0);
@@ -162,6 +167,34 @@ export default function History() {
           >
             All Time
           </button>
+          <div className="relative flex items-center gap-2">
+            <button
+              onClick={() => setFilterType("custom")}
+              className={`filter-btn ${filterType === "custom" ? "filter-btn-active" : "filter-btn-inactive"}`}
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <Calendar size={14} />
+              {filterType === "custom" ? `Date: ${customDate}` : "Pick Date"}
+            </button>
+            {filterType === "custom" && (
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="history-date-input"
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  fontSize: "12px",
+                  color: "#374151",
+                  outline: "none",
+                  cursor: "pointer"
+                }}
+              />
+            )}
+          </div>
         </div>
 
         <button
@@ -291,7 +324,13 @@ export default function History() {
                     </td>
                     <td>
                       <span
-                        className={`status-badge ${order.status === "Completed" || order.status === "Served" ? "status-completed" : "status-pending"}`}
+                        className={`status-badge ${
+                          order.status === "Completed" || order.status === "Served" 
+                            ? "status-completed" 
+                            : order.status === "Cancelled" 
+                              ? "status-cancelled" 
+                              : "status-pending"
+                        }`}
                       >
                         {order.status}
                       </span>
@@ -312,7 +351,13 @@ export default function History() {
                         `Table ${order.table}`}
                     </span>
                     <span
-                      className={`status-badge ${order.status === "Completed" || order.status === "Served" ? "status-completed" : "status-pending"}`}
+                      className={`status-badge ${
+                        order.status === "Completed" || order.status === "Served" 
+                          ? "status-completed" 
+                          : order.status === "Cancelled" 
+                            ? "status-cancelled" 
+                            : "status-pending"
+                      }`}
                     >
                       {order.status}
                     </span>

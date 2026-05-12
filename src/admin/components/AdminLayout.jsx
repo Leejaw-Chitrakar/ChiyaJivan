@@ -19,6 +19,7 @@ import {
   Shield,
   Server,
   Activity,
+  BookOpen,
 } from "lucide-react";
 import { auth } from "../../lib/firebase";
 import {
@@ -54,9 +55,15 @@ export default function AdminLayout({ onLogout, userRole }) {
   const [newOrderFlash, setNewOrderFlash] = useState(null);
   const [tableNames, setTableNames] = useState({});
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem("notificationsEnabled") === "true";
+  });
   const bellRef = useRef(null);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+  const [lastClearedTime, setLastClearedTime] = useState(() => {
+    return Number(localStorage.getItem("lastClearedTime")) || Date.now();
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -75,8 +82,10 @@ export default function AdminLayout({ onLogout, userRole }) {
 
     // Set admin face from Auth initially, then sync with Firestore profile
     if (auth.currentUser) {
-      const email = auth.currentUser.email || "Admin User";
-      const name = email.split("@")[0];
+      // Prefer Firebase Auth displayName, then email prefix
+      const displayName = auth.currentUser.displayName;
+      const emailPrefix = (auth.currentUser.email || "Admin User").split("@")[0];
+      const name = displayName || emailPrefix;
       setAdminName(name);
       setAdminLetter(name.charAt(0).toUpperCase());
     }
@@ -141,7 +150,7 @@ export default function AdminLayout({ onLogout, userRole }) {
               });
             }
           }
-        } catch (_) {}
+        } catch (_) { }
 
         setTimeout(() => setNewOrderFlash(null), 10000);
       }
@@ -230,22 +239,28 @@ export default function AdminLayout({ onLogout, userRole }) {
       desc: "Track live orders",
     },
     {
-      name: "Table QR Codes",
+      name: "QR Codes",
       path: "/admin/tables",
       icon: QrCode,
       desc: "Generate & print QRs",
     },
     {
-      name: "Expenses & Sales",
+      name: "Expenses",
       path: "/admin/expenses",
       icon: Wallet,
-      desc: "Track payments & expenses",
+      desc: "Track expenses",
     },
     {
       name: "Sales History",
       path: "/admin/history",
       icon: History,
       desc: "Past days records",
+    },
+    {
+      name: "Digital Khata",
+      path: "/admin/khata",
+      icon: BookOpen,
+      desc: "Credit ledger & dues",
     },
     {
       name: "Social & Updates",
@@ -259,23 +274,28 @@ export default function AdminLayout({ onLogout, userRole }) {
       icon: Settings,
       desc: "System & safety controls",
     },
+    {
+      name: "Waiter Dashboard",
+      path: "/waiter",
+      icon: ClipboardList,
+      desc: "Mobile-ready for floor staff",
+    },
   ];
 
   // Filter nav items based on role
   const filteredNavItems = navItems.filter(item => {
-    // Both admin and superadmin see everything for now except dev settings
-    // But we could restrict more if needed.
-    // The prompt says: "Show a 'System Settings' tab in the sidebar ONLY for role === 'superadmin'."
-    // Let's add a System Settings item specifically.
+    // Hide these items for superadmin — they use the Super Admin console instead
+    const superAdminHidden = ["Menu", "Orders", "Social & Updates", "Waiter Dashboard", "QR Codes"];
+    if (userRole === 'superadmin' && superAdminHidden.includes(item.name)) return false;
     return true;
   });
 
   if (userRole === 'superadmin') {
     filteredNavItems.push({
-      name: "System Logs",
-      path: "/admin/logs",
-      icon: Activity,
-      desc: "Raw system records",
+      name: "Super Admin",
+      path: "/admin/super",
+      icon: Shield,
+      desc: "Critical system controls",
     });
   }
 
@@ -288,795 +308,767 @@ export default function AdminLayout({ onLogout, userRole }) {
     <>
       <SEO title="Admin Dashboard" />
       <div
-      className="flex overflow-hidden"
-      style={{
-        height: "100vh",
-        minHeight: "-webkit-fill-available",
-        background: "#FDFBF7",
-        fontFamily: "'Inter', system-ui, sans-serif",
-      }}
-    >
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 lg:hidden"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* ─── SIDEBAR ─── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col lg:static lg:translate-x-0 flex-shrink-0 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-        style={{ width: "288px", background: "#1f130b" }}
+        className="flex overflow-hidden"
+        style={{
+          height: "100vh",
+          minHeight: "-webkit-fill-available",
+          background: "#FDFBF7",
+          fontFamily: "'Inter', system-ui, sans-serif",
+        }}
       >
-        {/* Brand */}
-        <div
-          style={{ padding: "24px 24px 16px" }}
-          className="flex items-center gap-4"
-        >
+        {/* Mobile Overlay */}
+        {isSidebarOpen && (
           <div
-            className="flex-shrink-0 flex items-center justify-center"
+            className="fixed inset-0 z-40 lg:hidden"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* ─── SIDEBAR ─── */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 flex flex-col lg:static lg:translate-x-0 flex-shrink-0 transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          style={{ width: "288px", background: "#1f130b" }}
+        >
+          {/* Brand */}
+          <div
+            style={{ padding: "24px 24px 16px" }}
+            className="flex items-center gap-4"
+          >
+            <div
+              className="flex-shrink-0 flex items-center justify-center"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                background: "#AD4928",
+                boxShadow: "0 8px 28px rgba(173,73,40,0.45)",
+              }}
+            >
+              <Coffee size={22} className="text-white" />
+            </div>
+            <div>
+              <h1
+                className="text-white font-bold"
+                style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
+              >
+                Chiya Jivan
+              </h1>
+              <p
+                className="font-bold uppercase"
+                style={{
+                  fontSize: "9px",
+                  color: "rgba(255,255,255,0.28)",
+                  letterSpacing: "0.2em",
+                  marginTop: 2,
+                }}
+              >
+                Admin Console
+              </p>
+            </div>
+          </div>
+
+          {/* Shop Status */}
+          <div
             style={{
-              width: 44,
-              height: 44,
+              margin: "0 16px 16px",
+              padding: "16px",
               borderRadius: 14,
-              background: "#AD4928",
-              boxShadow: "0 8px 28px rgba(173,73,40,0.45)",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <Coffee size={22} className="text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex-shrink-0"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: isShopOpen ? "#34d399" : "#f87171",
+                    boxShadow: isShopOpen
+                      ? "0 0 12px rgba(52,211,153,0.7)"
+                      : "none",
+                  }}
+                />
+                <div>
+                  <p
+                    className="font-bold uppercase"
+                    style={{
+                      fontSize: "10px",
+                      color: "rgba(255,255,255,0.28)",
+                      letterSpacing: "0.15em",
+                    }}
+                  >
+                    Shop Status
+                  </p>
+                  <p
+                    className="font-bold"
+                    style={{
+                      fontSize: "14px",
+                      color: isShopOpen ? "#34d399" : "#f87171",
+                      marginTop: 2,
+                    }}
+                  >
+                    {isShopOpen ? "Open for Business" : "Currently Closed"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleToggleShopStatus}
+                className="flex-shrink-0 relative transition-colors duration-300"
+                style={{
+                  width: 52,
+                  height: 28,
+                  borderRadius: 14,
+                  background: isShopOpen ? "#10b981" : "rgba(255,255,255,0.1)",
+                }}
+              >
+                <div
+                  className="absolute bg-white shadow-lg transition-all duration-300"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    top: 3,
+                    transform: isShopOpen
+                      ? "translateX(27px)"
+                      : "translateX(3px)",
+                  }}
+                />
+              </button>
+            </div>
           </div>
-          <div>
-            <h1
-              className="text-white font-bold"
-              style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
-            >
-              Chiya Jivan
-            </h1>
+
+          {/* Nav */}
+          <nav
+            className="flex-1 overflow-y-auto no-scrollbar"
+            style={{ padding: "0 12px" }}
+          >
             <p
               className="font-bold uppercase"
               style={{
                 fontSize: "9px",
-                color: "rgba(255,255,255,0.28)",
-                letterSpacing: "0.2em",
-                marginTop: 2,
+                color: "rgba(255,255,255,0.18)",
+                letterSpacing: "0.25em",
+                padding: "0 12px",
+                marginBottom: 12,
               }}
             >
-              Admin Console
+              Navigation
             </p>
-          </div>
-        </div>
-
-        {/* Shop Status */}
-        <div
-          style={{
-            margin: "0 16px 16px",
-            padding: "16px",
-            borderRadius: 14,
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex-shrink-0"
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  background: isShopOpen ? "#34d399" : "#f87171",
-                  boxShadow: isShopOpen
-                    ? "0 0 12px rgba(52,211,153,0.7)"
-                    : "none",
-                }}
-              />
-              <div>
-                <p
-                  className="font-bold uppercase"
-                  style={{
-                    fontSize: "10px",
-                    color: "rgba(255,255,255,0.28)",
-                    letterSpacing: "0.15em",
-                  }}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {filteredNavItems.map((item) => (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="group flex items-center gap-3 transition-all duration-200"
+                  style={({ isActive }) => ({
+                    padding: "10px 14px",
+                    borderRadius: 14,
+                    background: isActive ? "#AD4928" : "transparent",
+                    color: isActive ? "#fff" : "rgba(255,255,255,0.38)",
+                    boxShadow: isActive
+                      ? "0 8px 24px rgba(173,73,40,0.35)"
+                      : "none",
+                  })}
                 >
-                  Shop Status
-                </p>
-                <p
-                  className="font-bold"
-                  style={{
-                    fontSize: "14px",
-                    color: isShopOpen ? "#34d399" : "#f87171",
-                    marginTop: 2,
-                  }}
-                >
-                  {isShopOpen ? "Open for Business" : "Currently Closed"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleToggleShopStatus}
-              className="flex-shrink-0 relative transition-colors duration-300"
-              style={{
-                width: 52,
-                height: 28,
-                borderRadius: 14,
-                background: isShopOpen ? "#10b981" : "rgba(255,255,255,0.1)",
-              }}
-            >
-              <div
-                className="absolute bg-white shadow-lg transition-all duration-300"
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  top: 3,
-                  transform: isShopOpen
-                    ? "translateX(27px)"
-                    : "translateX(3px)",
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav
-          className="flex-1 overflow-y-auto no-scrollbar"
-          style={{ padding: "0 12px" }}
-        >
-          <p
-            className="font-bold uppercase"
-            style={{
-              fontSize: "9px",
-              color: "rgba(255,255,255,0.18)",
-              letterSpacing: "0.25em",
-              padding: "0 12px",
-              marginBottom: 12,
-            }}
-          >
-            Navigation
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {filteredNavItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className="group flex items-center gap-3 transition-all duration-200"
-                style={({ isActive }) => ({
-                  padding: "10px 14px",
-                  borderRadius: 14,
-                  background: isActive ? "#AD4928" : "transparent",
-                  color: isActive ? "#fff" : "rgba(255,255,255,0.38)",
-                  boxShadow: isActive
-                    ? "0 8px 24px rgba(173,73,40,0.35)"
-                    : "none",
-                })}
-              >
-                {({ isActive }) => (
-                  <>
-                    <div
-                      className="flex-shrink-0 transition-colors"
-                      style={{
-                        padding: 8,
-                        borderRadius: 10,
-                        background: isActive
-                          ? "rgba(255,255,255,0.18)"
-                          : "rgba(255,255,255,0.04)",
-                      }}
-                    >
-                      <item.icon size={18} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="font-bold"
-                        style={{ fontSize: "13px", lineHeight: 1.3 }}
-                      >
-                        {item.name}
-                      </p>
-                      <p
+                  {({ isActive }) => (
+                    <>
+                      <div
+                        className="flex-shrink-0 transition-colors"
                         style={{
-                          fontSize: "10px",
-                          lineHeight: 1.3,
-                          marginTop: 2,
-                          color: isActive
-                            ? "rgba(255,255,255,0.6)"
-                            : "rgba(255,255,255,0.2)",
+                          padding: 8,
+                          borderRadius: 10,
+                          background: isActive
+                            ? "rgba(255,255,255,0.18)"
+                            : "rgba(255,255,255,0.04)",
                         }}
                       >
-                        {item.desc}
-                      </p>
-                    </div>
-                    {isActive && (
-                      <ChevronRight
-                        size={16}
-                        style={{ flexShrink: 0, opacity: 0.5 }}
-                      />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
-
-        {/* Superadmin Developer Console */}
-        {userRole === 'superadmin' && (
-          <div
-            style={{
-              margin: "12px 16px",
-              padding: "16px",
-              borderRadius: 14,
-              background: "rgba(220, 38, 38, 0.1)",
-              border: "1px solid rgba(220, 38, 38, 0.2)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Shield size={14} className="text-red-500" />
-              <p className="font-bold uppercase text-red-500" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>
-                Developer Console
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-bold" style={{ fontSize: "12px" }}>Maintenance Mode</p>
-                  <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>Kill Switch</p>
-                </div>
-                <button
-                  onClick={() => updateSystemMaintenance(!shopSettings?.isSiteDown)}
-                  className="flex-shrink-0 relative transition-colors duration-300"
-                  style={{
-                    width: 44,
-                    height: 24,
-                    borderRadius: 12,
-                    background: shopSettings?.isSiteDown ? "#dc2626" : "rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <div
-                    className="absolute bg-white shadow-lg transition-all duration-300"
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 9,
-                      top: 3,
-                      transform: shopSettings?.isSiteDown
-                        ? "translateX(23px)"
-                        : "translateX(3px)",
-                    }}
-                  />
-                </button>
-              </div>
-              
-              <button 
-                className="w-full py-2 rounded-lg bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors"
-                onClick={() => alert("Maintenance logs coming soon...")}
-              >
-                Reset Admin Sessions
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Sign Out */}
-        <div
-          style={{
-            padding: "12px 16px 24px",
-            borderTop: "1px solid rgba(255,255,255,0.05)",
-            marginTop: 12,
-          }}
-        >
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full group transition-all"
-            style={{
-              padding: "10px 14px",
-              borderRadius: 14,
-              color: "rgba(255,255,255,0.3)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.08)";
-              e.currentTarget.style.color = "#f87171";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "rgba(255,255,255,0.3)";
-            }}
-          >
-            <div
-              style={{
-                padding: 8,
-                borderRadius: 10,
-                background: "rgba(255,255,255,0.04)",
-              }}
-            >
-              <LogOut size={18} />
-            </div>
-            <span className="font-bold" style={{ fontSize: "13px" }}>
-              Sign Out
-            </span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ─── MAIN ─── */}
-      <main
-        className="flex-1 flex flex-col"
-        style={{ minWidth: 0, overflowX: "hidden" }}
-      >
-        {/* Header */}
-        <header
-          className="flex items-center justify-between flex-shrink-0 sticky top-0 z-30"
-          style={{
-            padding: "16px 24px",
-            background: "rgba(253,251,247,0.8)",
-            backdropFilter: "blur(16px)",
-            borderBottom: "1px solid rgba(0,0,0,0.04)",
-          }}
-        >
-          <button
-            className="lg:hidden transition-colors"
-            style={{ padding: 10, borderRadius: 12, color: "#6b7280" }}
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <MenuIcon size={22} />
-          </button>
-
-          <div
-            className="flex items-center"
-            style={{ gap: 20, marginLeft: "auto" }}
-          >
-            {/* Live status pill */}
-            <div
-              className="flex items-center font-bold"
-              style={{
-                gap: 10,
-                padding: "8px 16px",
-                borderRadius: 999,
-                fontSize: "12px",
-                background: isShopOpen ? "#ecfdf5" : "#fef2f2",
-                border: `1px solid ${isShopOpen ? "#d1fae5" : "#fecdd3"}`,
-                color: isShopOpen ? "#059669" : "#ef4444",
-              }}
-            >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: isShopOpen ? "#10b981" : "#f87171",
-                  animation: isShopOpen ? "pulse 2s infinite" : "none",
-                }}
-              />
-              {isShopOpen ? "Shop is Live" : "Shop Closed"}
-            </div>
-
-            <div style={{ width: 1, height: 28, background: "#f3f4f6" }} />
-
-            <div ref={notifRef} style={{ position: "relative" }}>
-              <button
-                className="relative transition-colors"
-                style={{
-                  padding: 10,
-                  borderRadius: 12,
-                  color: notifOpen ? "#AD4928" : "#9ca3af",
-                  background: notifOpen
-                    ? "rgba(173,73,40,0.08)"
-                    : "transparent",
-                }}
-                onClick={() => setNotifOpen(!notifOpen)}
-              >
-                <Bell size={20} />
-                {activeOrders.length > 0 && (
-                  <span
-                    className="absolute"
-                    style={{
-                      top: 6,
-                      right: 6,
-                      minWidth: 18,
-                      height: 18,
-                      borderRadius: 999,
-                      background: "#AD4928",
-                      border: "2px solid #FDFBF7",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: "#fff",
-                      padding: "0 4px",
-                    }}
-                  >
-                    {activeOrders.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Dropdown */}
-              {notifOpen && (
-                <div className="notif-dropdown">
-                  {/* Dropdown Header */}
-                  <div
-                    style={{
-                      padding: "16px 20px",
-                      borderBottom: "1px solid #f3f4f6",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div>
-                      <p
-                        className="font-bold"
-                        style={{ fontSize: 15, color: "#3d2b1f" }}
-                      >
-                        Notifications
-                      </p>
-                      <p
-                        style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}
-                      >
-                        {activeOrders.length} active order
-                        {activeOrders.length !== 1 ? "s" : ""}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setNotifOpen(false)}
-                      style={{
-                        padding: 6,
-                        borderRadius: 8,
-                        background: "#f9fafb",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#9ca3af",
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-
-                  {/* Dropdown Body */}
-                  <div style={{ flex: 1, overflowY: "auto", maxHeight: 320 }}>
-                    {activeOrders.length === 0 ? (
-                      <div
-                        style={{ padding: "40px 20px", textAlign: "center" }}
-                      >
-                        <p style={{ fontSize: 28, marginBottom: 8 }}>🔔</p>
+                        <item.icon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
                         <p
                           className="font-bold"
-                          style={{ fontSize: 14, color: "#3d2b1f" }}
+                          style={{ fontSize: "13px", lineHeight: 1.3 }}
                         >
-                          All caught up!
+                          {item.name}
                         </p>
                         <p
                           style={{
-                            fontSize: 12,
-                            color: "#9ca3af",
-                            fontStyle: "italic",
-                            marginTop: 4,
+                            fontSize: "10px",
+                            lineHeight: 1.3,
+                            marginTop: 2,
+                            color: isActive
+                              ? "rgba(255,255,255,0.6)"
+                              : "rgba(255,255,255,0.2)",
                           }}
                         >
-                          No pending orders right now.
+                          {item.desc}
                         </p>
                       </div>
-                    ) : (
-                      activeOrders.slice(0, 10).map((order, i) => {
-                        const statusColor = {
-                          Pending: {
-                            bg: "#fffbeb",
-                            color: "#d97706",
-                            border: "#fde68a",
-                          },
-                          Preparing: {
-                            bg: "#eff6ff",
-                            color: "#2563eb",
-                            border: "#bfdbfe",
-                          },
-                          Served: {
-                            bg: "#f5f3ff",
-                            color: "#7c3aed",
-                            border: "#ede9fe",
-                          },
-                        };
-                        const sc =
-                          statusColor[order.status] || statusColor.Pending;
-                        return (
-                          <div
-                            key={order.id}
-                            style={{
-                              padding: "14px 20px",
-                              borderBottom:
-                                i < Math.min(activeOrders.length, 10) - 1
-                                  ? "1px solid #fafafa"
-                                  : "none",
-                              cursor: "pointer",
-                              transition: "background 0.15s",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.background =
-                                "rgba(0,0,0,0.015)")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.background = "transparent")
-                            }
+                      {isActive && (
+                        <ChevronRight
+                          size={16}
+                          style={{ flexShrink: 0, opacity: 0.5 }}
+                        />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+
+
+          {/* Sign Out */}
+          <div
+            style={{
+              padding: "12px 16px 24px",
+              borderTop: "1px solid rgba(255,255,255,0.05)",
+              marginTop: 12,
+            }}
+          >
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full group transition-all"
+              style={{
+                padding: "10px 14px",
+                borderRadius: 14,
+                color: "rgba(255,255,255,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,0.08)";
+                e.currentTarget.style.color = "#f87171";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "rgba(255,255,255,0.3)";
+              }}
+            >
+              <div
+                style={{
+                  padding: 8,
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.04)",
+                }}
+              >
+                <LogOut size={18} />
+              </div>
+              <span className="font-bold" style={{ fontSize: "13px" }}>
+                Sign Out
+              </span>
+            </button>
+          </div>
+        </aside>
+
+        {/* ─── MAIN ─── */}
+        <main
+          className="flex-1 flex flex-col"
+          style={{ minWidth: 0, overflowX: "hidden" }}
+        >
+          {/* Header */}
+          <header
+            className="flex items-center justify-between flex-shrink-0 sticky top-0 z-30"
+            style={{
+              padding: "16px 24px",
+              background: "rgba(253,251,247,0.8)",
+              backdropFilter: "blur(16px)",
+              borderBottom: "1px solid rgba(0,0,0,0.04)",
+            }}
+          >
+            <button
+              className="lg:hidden transition-colors"
+              style={{ padding: 10, borderRadius: 12, color: "#6b7280" }}
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <MenuIcon size={22} />
+            </button>
+
+            <div
+              className="flex items-center"
+              style={{ gap: 20, marginLeft: "auto" }}
+            >
+              {/* Live status pill */}
+              <div
+                className="flex items-center font-bold"
+                style={{
+                  gap: 10,
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  fontSize: "12px",
+                  background: isShopOpen ? "#ecfdf5" : "#fef2f2",
+                  border: `1px solid ${isShopOpen ? "#d1fae5" : "#fecdd3"}`,
+                  color: isShopOpen ? "#059669" : "#ef4444",
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: isShopOpen ? "#10b981" : "#f87171",
+                    animation: isShopOpen ? "pulse 2s infinite" : "none",
+                  }}
+                />
+                {isShopOpen ? "Shop is Live" : "Shop Closed"}
+              </div>
+
+              <div style={{ width: 1, height: 28, background: "#f3f4f6" }} />
+
+              <div ref={notifRef} style={{ position: "relative" }}>
+                <button
+                  className="relative transition-colors"
+                  style={{
+                    padding: 10,
+                    borderRadius: 12,
+                    color: notifOpen ? "#AD4928" : "#9ca3af",
+                    background: notifOpen
+                      ? "rgba(173,73,40,0.08)"
+                      : "transparent",
+                  }}
+                  onClick={() => setNotifOpen(!notifOpen)}
+                >
+                  <Bell size={20} />
+                  {activeOrders.filter(o => o.createdAt?.toDate().getTime() > lastClearedTime).length > 0 && (
+                    <span
+                      className="absolute"
+                      style={{
+                        top: 6,
+                        right: 6,
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 999,
+                        background: "#AD4928",
+                        border: "2px solid #FDFBF7",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: "#fff",
+                        padding: "0 4px",
+                      }}
+                    >
+                      {activeOrders.filter(o => o.createdAt?.toDate().getTime() > lastClearedTime).length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {notifOpen && (
+                  <div className="notif-dropdown">
+                    {/* Dropdown Header */}
+                    <div
+                      style={{
+                        padding: "16px 20px",
+                        borderBottom: "1px solid #f3f4f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <p
+                          className="font-bold"
+                          style={{ fontSize: 15, color: "#3d2b1f" }}
+                        >
+                          Notifications
+                        </p>
+                        <p
+                          style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}
+                        >
+                          {activeOrders.length} active order
+                          {activeOrders.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {activeOrders.length > 0 && (
+                          <button
                             onClick={() => {
-                              setNotifOpen(false);
-                              navigate("/admin/orders");
+                              const now = Date.now();
+                              setLastClearedTime(now);
+                              localStorage.setItem("lastClearedTime", now.toString());
+                            }}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "10px",
+                              background: "#f3f4f6",
+                              border: "none",
+                              cursor: "pointer",
+                              color: "#6b7280",
+                              fontSize: "11px",
+                              fontWeight: "800",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.02em",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#e5e7eb"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#f3f4f6"}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setNotifOpen(false)}
+                          style={{
+                            padding: 6,
+                            borderRadius: 8,
+                            background: "#f9fafb",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#9ca3af",
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: "auto", maxHeight: 320 }}>
+                      {activeOrders.filter(o => o.createdAt?.toDate().getTime() > lastClearedTime).length === 0 ? (
+                        <div
+                          style={{ padding: "40px 20px", textAlign: "center" }}
+                        >
+                          <p style={{ fontSize: 28, marginBottom: 8 }}>🔔</p>
+                          <p
+                            className="font-bold"
+                            style={{ fontSize: 14, color: "#3d2b1f" }}
+                          >
+                            All caught up!
+                          </p>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: "#9ca3af",
+                              fontStyle: "italic",
+                              marginTop: 4,
                             }}
                           >
-                            <div
-                              className="flex items-center"
-                              style={{ gap: 8, marginBottom: 4 }}
-                            >
-                              <span
-                                className="font-bold"
-                                style={{ fontSize: 13, color: "#AD4928" }}
-                              >
-                                Table {order.table}
-                              </span>
-                              <span
-                                className="font-bold uppercase"
+                            No new notifications.
+                          </p>
+                        </div>
+                      ) : (
+                        activeOrders
+                          .filter(o => o.createdAt?.toDate().getTime() > lastClearedTime)
+                          .slice(0, 10)
+                          .map((order, i) => {
+                            const statusColor = {
+                              Pending: {
+                                bg: "#fffbeb",
+                                color: "#d97706",
+                                border: "#fde68a",
+                              },
+                              Preparing: {
+                                bg: "#eff6ff",
+                                color: "#2563eb",
+                                border: "#bfdbfe",
+                              },
+                              Served: {
+                                bg: "#f5f3ff",
+                                color: "#7c3aed",
+                                border: "#ede9fe",
+                              },
+                            };
+                            const sc =
+                              statusColor[order.status] || statusColor.Pending;
+                            return (
+                              <div
+                                key={order.id}
                                 style={{
-                                  fontSize: 9,
-                                  letterSpacing: "0.06em",
-                                  padding: "2px 8px",
-                                  borderRadius: 999,
-                                  background: sc.bg,
-                                  color: sc.color,
-                                  border: `1px solid ${sc.border}`,
+                                  padding: "14px 20px",
+                                  borderBottom:
+                                    i < Math.min(activeOrders.length, 10) - 1
+                                      ? "1px solid #fafafa"
+                                      : "none",
+                                  cursor: "pointer",
+                                  transition: "background 0.15s",
+                                }}
+                                onMouseEnter={(e) =>
+                                (e.currentTarget.style.background =
+                                  "rgba(0,0,0,0.015)")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.background = "transparent")
+                                }
+                                onClick={() => {
+                                  setNotifOpen(false);
+                                  navigate("/admin/orders");
                                 }}
                               >
-                                {order.status}
-                              </span>
-                            </div>
-                            <p
-                              style={{
-                                fontSize: 12,
-                                color: "#6b7280",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              {order.itemsSummary || "—"}
-                            </p>
-                            <div
-                              className="flex items-center"
-                              style={{ gap: 8, marginTop: 4 }}
-                            >
-                              <span
-                                className="font-bold"
-                                style={{ fontSize: 12, color: "#3d2b1f" }}
-                              >
-                                Rs. {order.total}
-                              </span>
-                              <span style={{ fontSize: 11, color: "#d1d5db" }}>
-                                ·
-                              </span>
-                              <span
-                                className="flex items-center"
-                                style={{
-                                  fontSize: 11,
-                                  color: "#9ca3af",
-                                  gap: 3,
-                                }}
-                              >
-                                <Clock size={10} />
-                                {timeAgo(order.createdAt)}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                                <div
+                                  className="flex items-center"
+                                  style={{ gap: 8, marginBottom: 4 }}
+                                >
+                                  <span
+                                    className="font-bold"
+                                    style={{ fontSize: 13, color: "#AD4928" }}
+                                  >
+                                    Table {order.table}
+                                  </span>
+                                  <span
+                                    className="font-bold uppercase"
+                                    style={{
+                                      fontSize: 9,
+                                      letterSpacing: "0.06em",
+                                      padding: "2px 8px",
+                                      borderRadius: 999,
+                                      background: sc.bg,
+                                      color: sc.color,
+                                      border: `1px solid ${sc.border}`,
+                                    }}
+                                  >
+                                    {order.status}
+                                  </span>
+                                </div>
+                                <p
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#6b7280",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {order.itemsSummary || "—"}
+                                </p>
+                                <div
+                                  className="flex items-center"
+                                  style={{ gap: 8, marginTop: 4 }}
+                                >
+                                  <span
+                                    className="font-bold"
+                                    style={{ fontSize: 12, color: "#3d2b1f" }}
+                                  >
+                                    Rs. {order.total}
+                                  </span>
+                                  <span style={{ fontSize: 11, color: "#d1d5db" }}>
+                                    ·
+                                  </span>
+                                  <span
+                                    className="flex items-center"
+                                    style={{
+                                      fontSize: 11,
+                                      color: "#9ca3af",
+                                      gap: 3,
+                                    }}
+                                  >
+                                    <Clock size={10} />
+                                    {timeAgo(order.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
 
-                  {/* Dropdown Footer */}
-                  {activeOrders.length > 0 && (
+                    {/* Dropdown Footer */}
                     <div
                       style={{
                         padding: "12px 20px",
                         borderTop: "1px solid #f3f4f6",
                       }}
                     >
+                      {activeOrders.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setNotifOpen(false);
+                            navigate("/admin/orders");
+                          }}
+                          className="font-bold"
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: 12,
+                            fontSize: 13,
+                            background: "#AD4928",
+                            color: "#fff",
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = "#8f3d21")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "#AD4928")
+                          }
+                        >
+                          View All Orders →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div
+                ref={profileRef}
+                className="flex items-center relative cursor-pointer"
+                style={{ gap: 14, paddingLeft: 4 }}
+                onClick={() => setProfileOpen(!profileOpen)}
+              >
+                <div className="text-right hidden sm:block">
+                  <p
+                    className="font-bold"
+                    style={{
+                      fontSize: "14px",
+                      color: "#3d2b1f",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {adminName}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#9ca3af",
+                      lineHeight: 1.3,
+                      marginTop: 2,
+                    }}
+                  >
+                    {userRole === 'superadmin' ? 'Super Admin' : (userRole === 'loading' ? 'Verifying...' : 'Admin')}
+                  </p>
+                </div>
+                <div
+                  className="flex items-center justify-center text-white font-bold uppercase"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 16,
+                    fontSize: "16px",
+                    background: "linear-gradient(135deg, #AD4928, #7a3319)",
+                    boxShadow: "0 4px 16px rgba(173,73,40,0.25)",
+                  }}
+                >
+                  {adminLetter}
+                </div>
+
+                {profileOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 12px)",
+                      right: 0,
+                      width: 220,
+                      background: "#fff",
+                      borderRadius: 16,
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+                      border: "1px solid #f3f4f6",
+                      zIndex: 100,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ padding: "16px", borderBottom: "1px solid #f3f4f6" }}>
+                      <p style={{ fontSize: 14, fontWeight: "bold", color: "#3d2b1f" }}>{adminName}</p>
+                      <p style={{ fontSize: 12, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis" }}>{auth.currentUser?.email || "admin@example.com"}</p>
+                    </div>
+                    <div style={{ padding: 8 }}>
                       <button
-                        onClick={() => {
-                          setNotifOpen(false);
-                          navigate("/admin/orders");
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProfileOpen(false);
+                          navigate("/admin/settings");
                         }}
-                        className="font-bold"
                         style={{
                           width: "100%",
-                          padding: "10px",
-                          borderRadius: 12,
-                          fontSize: 13,
-                          background: "#AD4928",
-                          color: "#fff",
+                          padding: "10px 12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          background: "transparent",
                           border: "none",
                           cursor: "pointer",
-                          transition: "background 0.15s",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#4b5563",
+                          textAlign: "left",
+                          transition: "background 0.2s"
                         }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = "#8f3d21")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.background = "#AD4928")
-                        }
+                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                       >
-                        View All Orders →
+                        <Settings size={16} /> Global Settings
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLogout();
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#ef4444",
+                          textAlign: "left",
+                          transition: "background 0.2s"
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <LogOut size={16} /> Sign Out
                       </button>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div
-              ref={profileRef}
-              className="flex items-center relative cursor-pointer"
-              style={{ gap: 14, paddingLeft: 4 }}
-              onClick={() => setProfileOpen(!profileOpen)}
-            >
-              <div className="text-right hidden sm:block">
-                <p
-                  className="font-bold"
-                  style={{
-                    fontSize: "14px",
-                    color: "#3d2b1f",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {adminName}
-                </p>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9ca3af",
-                    lineHeight: 1.3,
-                    marginTop: 2,
-                  }}
-                >
-                  Super Admin
-                </p>
-              </div>
-              <div
-                className="flex items-center justify-center text-white font-bold uppercase"
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 16,
-                  fontSize: "16px",
-                  background: "linear-gradient(135deg, #AD4928, #7a3319)",
-                  boxShadow: "0 4px 16px rgba(173,73,40,0.25)",
-                }}
-              >
-                {adminLetter}
-              </div>
-
-              {profileOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 12px)",
-                    right: 0,
-                    width: 220,
-                    background: "#fff",
-                    borderRadius: 16,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                    border: "1px solid #f3f4f6",
-                    zIndex: 100,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div style={{ padding: "16px", borderBottom: "1px solid #f3f4f6" }}>
-                    <p style={{ fontSize: 14, fontWeight: "bold", color: "#3d2b1f" }}>{adminName}</p>
-                    <p style={{ fontSize: 12, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis" }}>{auth.currentUser?.email || "admin@example.com"}</p>
                   </div>
-                  <div style={{ padding: 8 }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setProfileOpen(false);
-                        navigate("/admin/settings");
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        borderRadius: 8,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "#4b5563",
-                        textAlign: "left",
-                        transition: "background 0.2s"
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <Settings size={16} /> Global Settings
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onLogout();
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        borderRadius: 8,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "#ef4444",
-                        textAlign: "left",
-                        transition: "background 0.2s"
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      <LogOut size={16} /> Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Page Content */}
-        <div
-          className="flex-1"
-          style={{ overflowY: "auto", overflowX: "hidden" }}
-        >
-          <div className="admin-content-container">
-            <Outlet />
-          </div>
-        </div>
-
-        {/* Global New Order Flash */}
-        {newOrderFlash && (
+          {/* Page Content */}
           <div
-            className="order-flash-notification"
-            onClick={() => {
-              setNewOrderFlash(null);
-              navigate("/admin/orders");
-            }}
-            style={{ cursor: "pointer" }}
+            className="flex-1"
+            style={{ overflowY: "auto", overflowX: "hidden" }}
           >
-            <div className="order-flash-timer-bar" />
-            <div className="order-flash-icon-wrap">
-              <Bell size={22} />
+            <div className="admin-content-container">
+              <Outlet />
             </div>
-            <div style={{ flex: 1 }}>
-              <p className="order-flash-title">
-                🔔 New Order for{" "}
-                {tableNames[newOrderFlash.table] ||
-                  `Table ${newOrderFlash.table}`}
-                !
-              </p>
-              <p className="order-flash-desc">
-                {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}
-              </p>
-            </div>
-            <ChevronRight size={18} style={{ opacity: 0.3 }} />
           </div>
-        )}
-      </main>
 
-      {/* Styles for animations and scrollbars */}
-      <style>{`
+          {/* Global New Order Flash */}
+          {newOrderFlash && (
+            <div
+              className="order-flash-notification"
+              onClick={() => {
+                setNewOrderFlash(null);
+                navigate("/admin/orders");
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <div className="order-flash-timer-bar" />
+              <div className="order-flash-icon-wrap">
+                <Bell size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p className="order-flash-title">
+                  🔔 New Order for{" "}
+                  {tableNames[newOrderFlash.table] ||
+                    `Table ${newOrderFlash.table}`}
+                  !
+                </p>
+                <p className="order-flash-desc">
+                  {newOrderFlash.itemsSummary} · Rs. {newOrderFlash.total}
+                </p>
+              </div>
+              <ChevronRight size={18} style={{ opacity: 0.3 }} />
+            </div>
+          )}
+        </main>
+
+        {/* Styles for animations and scrollbars */}
+        <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
@@ -1196,7 +1188,7 @@ export default function AdminLayout({ onLogout, userRole }) {
           margin: 0.25rem 0 0 0;
         }
       `}</style>
-    </div>
+      </div>
     </>
   );
 }

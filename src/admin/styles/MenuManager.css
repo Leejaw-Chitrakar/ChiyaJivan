@@ -148,9 +148,20 @@
 }
 
 @media (min-width: 640px) {
-  .menu-summary-val-new { font-size: 2rem; }
-  .menu-summary-label-new { font-size: 0.75rem; letter-spacing: 0.15em; }
-  .menu-summary-icon-wrap { width: 44px; height: 44px; margin-bottom: 0.5rem; }
+  .menu-summary-val-new {
+    font-size: 2rem;
+  }
+
+  .menu-summary-label-new {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+  }
+
+  .menu-summary-icon-wrap {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0.5rem;
+  }
 }
 
 /* For the 3rd card on mobile to span full width or stay in grid */
@@ -161,9 +172,17 @@
   }
 }
 
-.menu-summary-card.total { background: #f9fafb; }
-.menu-summary-card.available { background: #ecfdf5; }
-.menu-summary-card.out { background: #fef2f2; }
+.menu-summary-card.total {
+  background: #f9fafb;
+}
+
+.menu-summary-card.available {
+  background: #ecfdf5;
+}
+
+.menu-summary-card.out {
+  background: #fef2f2;
+}
 
 .menu-summary-val {
   font-size: 1.875rem;
@@ -171,9 +190,17 @@
   margin: 0;
 }
 
-.menu-summary-val.total { color: #3d2b1f; }
-.menu-summary-val.available { color: #059669; }
-.menu-summary-val.out { color: #ef4444; }
+.menu-summary-val.total {
+  color: #3d2b1f;
+}
+
+.menu-summary-val.available {
+  color: #059669;
+}
+
+.menu-summary-val.out {
+  color: #ef4444;
+}
 
 .menu-summary-label {
   font-size: 0.75rem;
@@ -441,6 +468,7 @@
   .menu-item-actions {
     opacity: 0;
   }
+
   .menu-item-card:hover .menu-item-actions {
     opacity: 1;
   }
@@ -503,8 +531,13 @@
   letter-spacing: 0.05em;
 }
 
-.menu-item-status.avail { color: #10b981; }
-.menu-item-status.out { color: #f87171; }
+.menu-item-status.avail {
+  color: #10b981;
+}
+
+.menu-item-status.out {
+  color: #f87171;
+}
 
 .menu-item-toggle {
   position: relative;
@@ -524,8 +557,13 @@
   }
 }
 
-.menu-item-toggle.avail { background-color: #34d399; }
-.menu-item-toggle.out { background-color: #e5e7eb; }
+.menu-item-toggle.avail {
+  background-color: #34d399;
+}
+
+.menu-item-toggle.out {
+  background-color: #e5e7eb;
+}
 
 .menu-item-toggle-dot {
   position: absolute;
@@ -593,6 +631,7 @@
   font-style: italic;
   margin: 0.25rem 0 0 0;
 }
+
 /* Modal Overlay */
 .menu-modal-overlay {
   position: fixed;
@@ -608,29 +647,41 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Modal Content */
 .menu-modal-content {
   background: #ffffff;
   width: 100%;
-  max-width: 32rem;
-  border-radius: 2rem;
+  max-width: 28rem;
+  border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modalSlideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Modal Header */
 .menu-modal-header {
-  padding: 2rem;
+  padding: 0.875rem 1.25rem;
   background: #fdf2ed;
   display: flex;
   align-items: center;
@@ -638,17 +689,17 @@
 }
 
 .menu-modal-title-group h2 {
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #3d2b1f;
   margin: 0;
 }
 
 .menu-modal-title-group p {
-  font-size: 0.875rem;
+  font-size: 0.7rem;
   color: #AD4928;
   font-weight: 600;
-  margin: 0.25rem 0 0 0;
+  margin: 0.1rem 0 0 0;
 }
 
 .menu-modal-close {
@@ -668,22 +719,22 @@
 
 /* Modal Body / Form */
 .menu-modal-body {
-  padding: 2rem;
+  padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
 }
 
 .menu-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 0.75rem;
 }
 
 .menu-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .menu-form-group.full {
@@ -691,41 +742,57 @@
 }
 
 .menu-form-group label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: #9ca3af;
+  margin-left: 0.25rem;
 }
 
-.menu-form-input, .menu-form-select, .menu-form-textarea {
+.menu-form-input,
+.menu-form-select,
+.menu-form-textarea {
   background: #f9fafb;
   border: 1.5px solid #f3f4f6;
-  border-radius: 0.875rem;
-  padding: 0.875rem 1rem;
-  font-size: 0.9375rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
   color: #3d2b1f;
   outline: none;
   transition: all 0.2s;
   font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.menu-form-input:focus, .menu-form-select:focus, .menu-form-textarea:focus {
+.menu-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23AD4928' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.menu-form-input:focus,
+.menu-form-select:focus,
+.menu-form-textarea:focus {
   background: #ffffff;
   border-color: #AD4928;
   box-shadow: 0 0 0 4px rgba(173, 73, 40, 0.1);
 }
 
 .menu-form-textarea {
-  min-height: 80px;
+  min-height: 60px;
   resize: vertical;
 }
 
 /* Modal Footer */
 .menu-modal-footer {
-  padding: 1.5rem 2rem 2rem 2rem;
+  padding: 0.5rem 1.25rem 1rem 1.25rem;
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .menu-btn-cancel {
@@ -733,9 +800,10 @@
   background: #f9fafb;
   color: #6b7280;
   border: none;
-  padding: 1rem;
-  border-radius: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
   font-weight: 700;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -750,13 +818,14 @@
   background: #AD4928;
   color: #ffffff;
   border: none;
-  padding: 1rem;
-  border-radius: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
   font-weight: 700;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -775,14 +844,20 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 640px) {
   .menu-form-grid {
     grid-template-columns: 1fr;
   }
+
   .menu-form-group.full {
     grid-column: span 1;
   }

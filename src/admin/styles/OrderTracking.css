@@ -68,7 +68,7 @@
 
 @media (min-width: 640px) {
   .order-summary-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
   }
 }
@@ -124,6 +124,12 @@
   box-shadow: 0 0 0 2px #c4b5fd;
 }
 
+.order-summary-card.active-Cancelled {
+  background-color: #fef2f2;
+  border-color: #fecdd3;
+  box-shadow: 0 0 0 2px #f87171;
+}
+
 .order-summary-icon {
   display: inline-flex;
   padding: 0.4rem;
@@ -152,6 +158,7 @@
 .order-summary-icon.Preparing { background-color: #eff6ff; color: #2563eb; }
 .order-summary-icon.Served { background-color: #f5f3ff; color: #7c3aed; }
 .order-summary-icon.Completed { background-color: #ecfdf5; color: #059669; }
+.order-summary-icon.Cancelled { background-color: #fef2f2; color: #ef4444; }
 
 .order-summary-count {
   font-size: 1.25rem;
@@ -188,6 +195,7 @@
 .order-summary-label.Preparing { color: #2563eb; }
 .order-summary-label.Served { color: #7c3aed; }
 .order-summary-label.Completed { color: #059669; }
+.order-summary-label.Cancelled { color: #ef4444; }
 
 /* Orders List */
 .order-list-section {

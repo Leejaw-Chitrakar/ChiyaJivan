@@ -12,11 +12,13 @@ import {
   Flame,
   Eye,
   X,
+  RefreshCcw,
 } from "lucide-react";
-import { 
-  subscribeToOrders, 
+import {
+  subscribeToOrders,
   subscribeToShopSettings,
-  updateTableOccupancy
+  updateTableOccupancy,
+  resetAllTables
 } from "../../lib/firestoreService";
 
 
@@ -75,7 +77,8 @@ export default function Overview() {
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   const preparingCount = orders.filter((o) => o.status === "Preparing").length;
   const servedCount = orders.filter((o) => o.status === "Served").length;
-  
+  const cancelledCount = orders.filter((o) => o.status === "Cancelled").length;
+
   // Find top seller
   const itemCounts = orders.reduce((acc, o) => {
     (o.items || []).forEach(item => {
@@ -83,7 +86,7 @@ export default function Overview() {
     });
     return acc;
   }, {});
-  
+
   const topSeller = Object.entries(itemCounts)
     .sort((a, b) => b[1] - a[1])[0];
 
@@ -159,6 +162,12 @@ export default function Overview() {
       color: "#6b7280",
       dot: "#9ca3af",
       border: "#e5e7eb",
+    },
+    Cancelled: {
+      bg: "#fef2f2",
+      color: "#dc2626",
+      dot: "#ef4444",
+      border: "#fee2e2",
     },
   };
 
@@ -244,10 +253,10 @@ export default function Overview() {
       {/* ── Dashboard Top Section ── */}
       <div className="dashboard-top-grid">
         {/* Left Side: Stats Cards */}
-        <div className="overview-stats-wrapper" style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(2, 1fr)", 
-          gap: 16 
+        <div className="overview-stats-wrapper" style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 16
         }}>
           {stats.map((stat) => (
             <div
@@ -332,10 +341,10 @@ export default function Overview() {
         </div>
 
         {/* Right Side: Table Occupancy Grid */}
-        <div style={{ 
-          background: "#fff", 
-          padding: "24px", 
-          borderRadius: 24, 
+        <div style={{
+          background: "#fff",
+          padding: "24px",
+          borderRadius: 24,
           border: "1px solid #f3f4f6",
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           display: "flex",
@@ -345,17 +354,60 @@ export default function Overview() {
             <div>
               <h2 className="font-bold" style={{ fontSize: 16, color: "#3d2b1f" }}>Table Status</h2>
             </div>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#AD4928" }} />
                 <span style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase" }}>Occupied</span>
               </div>
+              <button
+                onClick={async () => {
+                  if (window.confirm("Force reset all tables to 'Empty'?")) {
+                    try {
+                      await resetAllTables();
+                    } catch (err) {
+                      alert("Reset failed");
+                    }
+                  }
+                }}
+                className="reset-tables-btn"
+                title="Reset All Tables"
+                style={{
+                  background: "rgba(173,73,40,0.05)",
+                  border: "1px solid rgba(173,73,40,0.15)",
+                  borderRadius: "8px",
+                  padding: "5px 12px",
+                  color: "#AD4928",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  fontSize: "10.5px",
+                  fontWeight: "800",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.03em",
+                  transition: "all 0.2s ease",
+                  lineHeight: 1
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "#AD4928";
+                  e.currentTarget.style.color = "#fff";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(173,73,40,0.2)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(173,73,40,0.05)";
+                  e.currentTarget.style.color = "#AD4928";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <RefreshCcw size={12} strokeWidth={3} />
+                <span>Reset Tables</span>
+              </button>
             </div>
           </div>
 
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))", 
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))",
             gap: 10,
             flex: 1
           }}>
@@ -365,7 +417,7 @@ export default function Overview() {
               const name = tableNames[tableIdStr] || tableNames[tableIdNum] || `Table ${tableIdNum}`;
               const isOccupied = isTableOccupied(tableIdNum);
               return (
-                <div 
+                <div
                   key={tableIdStr}
                   onClick={async () => {
                     try {
@@ -387,45 +439,45 @@ export default function Overview() {
                     cursor: "pointer"
                   }}
                 >
-                <div style={{ 
-                  width: 44, 
-                  height: 44, 
-                  borderRadius: 12, 
-                  background: isOccupied ? "#AD4928" : "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: isOccupied ? "#fff" : "#9ca3af",
-                  fontSize: 14,
-                  fontWeight: "bold",
-                  boxShadow: isOccupied ? "0 4px 12px rgba(173,73,40,0.2)" : "none",
-                  textAlign: "center",
-                  border: isOccupied ? "none" : "1px solid #e5e7eb"
-                }}>
-                  {getInitials(name)}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={{ 
-                    fontSize: 10, 
-                    fontWeight: 700, 
-                    color: "#3d2b1f",
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: 70,
-                    marginBottom: 2
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: isOccupied ? "#AD4928" : "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: isOccupied ? "#fff" : "#9ca3af",
+                    fontSize: 14,
+                    fontWeight: "bold",
+                    boxShadow: isOccupied ? "0 4px 12px rgba(173,73,40,0.2)" : "none",
+                    textAlign: "center",
+                    border: isOccupied ? "none" : "1px solid #e5e7eb"
                   }}>
-                    {name}
-                  </span>
-                  <span style={{ 
-                    fontSize: 8, 
-                    fontWeight: 800, 
-                    color: isOccupied ? "#AD4928" : "#9ca3af",
-                    textTransform: "uppercase",
-                  }}>
-                    {isOccupied ? "Occupied" : "Free"}
-                  </span>
-                </div>
+                    {getInitials(name)}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#3d2b1f",
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: 70,
+                      marginBottom: 2
+                    }}>
+                      {name}
+                    </span>
+                    <span style={{
+                      fontSize: 8,
+                      fontWeight: 800,
+                      color: isOccupied ? "#AD4928" : "#9ca3af",
+                      textTransform: "uppercase",
+                    }}>
+                      {isOccupied ? "Occupied" : "Free"}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -734,11 +786,11 @@ export default function Overview() {
                   pct:
                     todaysOrders > 0
                       ? Math.round(
-                          (orders.filter((o) => o.status === "Completed")
-                            .length /
-                            todaysOrders) *
-                            100,
-                        )
+                        (orders.filter((o) => o.status === "Completed")
+                          .length /
+                          todaysOrders) *
+                        100,
+                      )
                       : 0,
                 },
                 {
@@ -746,10 +798,10 @@ export default function Overview() {
                   pct:
                     todaysOrders > 0
                       ? Math.round(
-                          ((pendingCount + preparingCount + servedCount) /
-                            todaysOrders) *
-                            100,
-                        )
+                        ((pendingCount + preparingCount + servedCount) /
+                          todaysOrders) *
+                        100,
+                      )
                       : 0,
                 },
               ].map((bar) => (
@@ -936,8 +988,8 @@ export default function Overview() {
                     style={{ fontSize: 16, color: "#3d2b1f" }}
                   >
                     {!selectedOrder.customer ||
-                    selectedOrder.customer === `Table ${selectedOrder.table}` ||
-                    selectedOrder.customer ===
+                      selectedOrder.customer === `Table ${selectedOrder.table}` ||
+                      selectedOrder.customer ===
                       `Table ${selectedOrder.table} Guest`
                       ? "Anonymous"
                       : selectedOrder.customer}
