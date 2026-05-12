@@ -245,17 +245,23 @@ export async function saveAdminProfile(profile) {
 
 // ─── RBAC & USER ROLES ───────────────────────────────────────────────────────
 
-/** Fetch user role from Firestore */
-export async function getUserRole(uid) {
+/** Fetch user role from Firestore and sync basic info */
+export async function getUserRole(user) {
+  const uid = user.uid;
+  const email = user.email;
   const superId = (import.meta.env.VITE_SUPERADMIN_UID || "").trim();
   const adminId = (import.meta.env.VITE_ADMIN_UID || "").trim();
   const currentId = (uid || "").trim();
+
+  // Always ensure the email is stored in the user document for mapping names in logs
+  const userRef = doc(usersCol, uid);
+  await setDoc(userRef, { email, updatedAt: serverTimestamp() }, { merge: true });
 
   if (currentId === superId) return "superadmin";
   if (currentId === adminId) return "admin";
 
   try {
-    const userDoc = await getDoc(doc(usersCol, uid));
+    const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
       return userDoc.data().role || "visitor";
     }
@@ -515,4 +521,12 @@ export function subscribeToKhataAudit(callback) {
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   });
+}
+
+/** Clear all audit logs (Developer Maintenance) */
+export async function clearAuditLogs() {
+  const snap = await getDocs(collection(db, "auditLogs"));
+  const batch = writeBatch(db);
+  snap.docs.forEach(d => batch.delete(d.ref));
+  return await batch.commit();
 }

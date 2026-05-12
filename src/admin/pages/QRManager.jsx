@@ -19,7 +19,7 @@ import "../styles/TableQRManager.css";
 
 const SITE_URL = "https://chiyajivan.web.app";
 
-export default function TableQRManager() {
+export default function QRManager() {
   const [tableCount, setTableCount] = useState(10);
   const [tableNames, setTableNames] = useState({});
   const [previewTable, setPreviewTable] = useState(null);

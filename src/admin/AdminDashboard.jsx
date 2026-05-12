@@ -8,7 +8,7 @@ import AdminLayout from "./components/AdminLayout";
 import Overview from "./pages/Overview";
 import MenuManager from "./pages/MenuManager";
 import OrderTracking from "./pages/OrderTracking";
-import TableQRManager from "./pages/TableQRManager";
+import QRManager from "./pages/QRManager";
 import SocialManager from "./pages/SocialManager";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
@@ -53,14 +53,14 @@ export default function AdminDashboard({ loginOnly = false }) {
               setUserRole(prev => (prev === "loading" ? "admin" : prev));
             }, 5000);
 
-            const role = await getUserRole(user.uid);
+            const role = await getUserRole(user);
             clearTimeout(timeoutId);
 
 
             setUserRole(role);
             sessionStorage.setItem("userRole", role);
           } catch (err) {
-          
+
             // Default to admin if verification fails
             setUserRole("admin");
             sessionStorage.setItem("userRole", "admin");
@@ -128,7 +128,7 @@ export default function AdminDashboard({ loginOnly = false }) {
         <Route path="dashboard" element={<Overview />} />
         <Route path="menu" element={<MenuManager />} />
         <Route path="orders" element={<OrderTracking />} />
-        <Route path="tables" element={<TableQRManager />} />
+        <Route path="qrcodes" element={<QRManager />} />
         <Route path="social" element={<SocialManager />} />
         <Route path="history" element={<History />} />
         <Route path="settings" element={<Settings userRole={userRole} />} />

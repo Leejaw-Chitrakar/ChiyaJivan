@@ -375,24 +375,7 @@ export default function OrderTracking() {
           <h1 className="order-tracking-title">Order Tracking</h1>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={playNotificationSound}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              fontSize: "13px",
-              fontWeight: "600",
-              background: "#fdf2ed",
-              color: "#ad4928",
-              border: "1px solid #fce3d9",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
-          >
-            <Bell size={16} /> Test Sound
-          </button>
+
           {orders.length > 0 && (
             <button
               onClick={handleClearOrders}

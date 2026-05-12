@@ -240,7 +240,7 @@ export default function AdminLayout({ onLogout, userRole }) {
     },
     {
       name: "QR Codes",
-      path: "/admin/tables",
+      path: "/admin/qrcodes",
       icon: QrCode,
       desc: "Generate & print QRs",
     },

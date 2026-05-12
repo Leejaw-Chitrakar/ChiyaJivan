@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { 
-  ShieldAlert, 
-  Database, 
-  Trash2, 
-  RefreshCcw, 
-  AlertTriangle, 
+import {
+  ShieldAlert,
+  Database,
+  Trash2,
+  RefreshCcw,
+  AlertTriangle,
   Activity,
   UserCheck,
-  Lock
+  Lock,
+  Bell,
+  RefreshCw,
+  Eraser
 } from "lucide-react";
-import { 
+import {
   subscribeToShopSettings,
   resetAllTables,
   runDatabaseOrganize,
@@ -18,9 +21,27 @@ import {
   updateUserRole,
   subscribeToAuditLogs,
   logAuditAction,
-  updateSystemMaintenance
+  updateSystemMaintenance,
+  clearAuditLogs
 } from "../lib/firestoreService";
 import "./SuperAdmin.css";
+
+const bellSound = new Audio("/bell-chime.mp3");
+const playTestSound = () => {
+  bellSound.currentTime = 0;
+  bellSound.play().catch(e => console.log("Sound play failed", e));
+};
+
+const playTestNotification = () => {
+  if (Notification.permission === "granted") {
+    new Notification("Chiya Jivan Test", {
+      body: "This is a test notification from the Super Admin Console.",
+      icon: "/favicon.ico"
+    });
+  } else {
+    alert("Notification permission is not granted. Please enable it in Settings.");
+  }
+};
 
 export default function SuperAdmin() {
   const [shopSettings, setShopSettings] = useState(null);
@@ -29,14 +50,15 @@ export default function SuperAdmin() {
   const [users, setUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [activeTab, setActiveTab] = useState("controls"); // controls, staff, audit
+  const [showTestModal, setShowTestModal] = useState(false);
 
   useEffect(() => {
     const unsubSettings = subscribeToShopSettings(setShopSettings);
     const unsubAudit = subscribeToAuditLogs(setAuditLogs);
-    
+
     // Fetch users initially
     getAllUsers().then(setUsers);
-    
+
     return () => {
       unsubSettings();
       unsubAudit();
@@ -96,6 +118,33 @@ export default function SuperAdmin() {
       color: "#6b7280",
       action: () => purgeOldOrders(30),
       btnText: "Purge >30 Days"
+    },
+    {
+      id: "clear_audit",
+      title: "Clear Audit History",
+      desc: "Wipe the system audit logs. Useful for clearing development history or keeping logs tidy.",
+      icon: Eraser,
+      color: "#9ca3af",
+      action: () => clearAuditLogs(),
+      btnText: "Wipe Audit Logs"
+    },
+    {
+      id: "reset_tables",
+      title: "Reset Occupancy",
+      desc: "Instantly clear all 'Busy' table markers. Useful if table status gets stuck or for end-of-day resets.",
+      icon: RefreshCw,
+      color: "#10b981",
+      action: () => resetAllTables(),
+      btnText: "Clear All Tables"
+    },
+    {
+      id: "test_features",
+      title: "Test Features",
+      desc: "Run diagnostics on system alert mechanisms to ensure staff stay informed.",
+      icon: Bell,
+      color: "#3b82f6",
+      action: () => setShowTestModal(true),
+      btnText: "Open Test Suite"
     }
   ];
 
@@ -133,10 +182,17 @@ export default function SuperAdmin() {
               </div>
               <h3 className="super-card-title">{item.title}</h3>
               <p className="super-card-desc">{item.desc}</p>
-              <button 
+
+              <button
                 className="super-card-btn"
                 style={{ background: item.color }}
-                onClick={() => setConfirmAction(item)}
+                onClick={() => {
+                  if (item.id === "test_features") {
+                    setShowTestModal(true);
+                  } else {
+                    setConfirmAction(item);
+                  }
+                }}
                 disabled={isProcessing}
               >
                 {item.btnText}
@@ -152,7 +208,7 @@ export default function SuperAdmin() {
             <table className="staff-table">
               <thead>
                 <tr>
-                  <th>User Email</th>
+                  <th>Staff Member</th>
                   <th>Current Role</th>
                   <th>Actions</th>
                 </tr>
@@ -160,13 +216,22 @@ export default function SuperAdmin() {
               <tbody>
                 {users.map(u => (
                   <tr key={u.uid}>
-                    <td className="staff-email">{u.email || u.uid}</td>
+                    <td className="staff-email">
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#111827' }}>
+                          {u.displayName || "No Name Set"}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          {u.email || u.uid}
+                        </span>
+                      </div>
+                    </td>
                     <td>
                       <span className={`role-pill ${u.role || 'visitor'}`}>{u.role || 'visitor'}</span>
                     </td>
                     <td className="staff-actions">
-                      <select 
-                        value={u.role || 'visitor'} 
+                      <select
+                        value={u.role || 'visitor'}
                         onChange={(e) => handleRoleUpdate(u.uid, e.target.value)}
                         className="role-select"
                       >
@@ -187,16 +252,30 @@ export default function SuperAdmin() {
       {activeTab === 'audit' && (
         <div className="audit-logs-card">
           <div className="audit-list">
-            {auditLogs.map(log => (
-              <div key={log.id} className="audit-item">
-                <div className="audit-info">
-                  <span className="audit-action">{log.action}</span>
-                  <span className="audit-user">by {log.user}</span>
+            {auditLogs.map(log => {
+              // Try to find the user's display name from our users list
+              // Check against UID, login email (if we ever save it), or the contactEmail set in profile
+              const staffMember = users.find(u => {
+                const logUserLower = log.user?.toLowerCase();
+                return (
+                  u.uid === log.user || 
+                  u.email?.toLowerCase() === logUserLower || 
+                  u.contactEmail?.toLowerCase() === logUserLower
+                );
+              });
+              const displayName = staffMember?.displayName || log.user;
+
+              return (
+                <div key={log.id} className="audit-item">
+                  <div className="audit-info">
+                    <span className="audit-action">{log.action}</span>
+                    <span className="audit-user">by {displayName}</span>
+                  </div>
+                  <div className="audit-detail">{log.detail}</div>
+                  <div className="audit-time">{log.timestamp?.toDate().toLocaleString()}</div>
                 </div>
-                <div className="audit-detail">{log.detail}</div>
-                <div className="audit-time">{log.timestamp?.toDate().toLocaleString()}</div>
-              </div>
-            ))}
+              );
+            })}
             {auditLogs.length === 0 && <p className="text-center py-8 text-gray-400">No recent activity logs.</p>}
           </div>
         </div>
@@ -211,12 +290,40 @@ export default function SuperAdmin() {
             <p>You are about to perform: <strong>{confirmAction.title}</strong>. This action may affect live users.</p>
             <div className="super-modal-actions">
               <button className="super-modal-cancel" onClick={() => setConfirmAction(null)}>Cancel</button>
-              <button 
-                className="super-modal-confirm" 
+              <button
+                className="super-modal-confirm"
                 style={{ background: confirmAction.color }}
                 onClick={() => handleAction(confirmAction)}
               >
                 {isProcessing ? "Processing..." : "Yes, Proceed"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diagnostic Test Modal */}
+      {showTestModal && (
+        <div className="super-modal-overlay" onClick={() => setShowTestModal(false)}>
+          <div className="super-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="super-modal-icon-bg" style={{ background: '#eff6ff', color: '#3b82f6', margin: '0 auto 1.5rem auto' }}>
+              <Bell size={32} />
+            </div>
+            <h3>System Test Suite</h3>
+            <p>Select a feature below to run a real-time diagnostic test on the system alerts.</p>
+
+            <div className="super-feature-grid">
+              <button className="super-feature-btn" onClick={playTestSound}>
+                <RefreshCcw size={14} className="mr-2 inline" /> Test Kitchen Bell
+              </button>
+              <button className="super-feature-btn" onClick={playTestNotification}>
+                <Bell size={14} className="mr-2 inline" /> Test Browser Notif
+              </button>
+            </div>
+
+            <div className="mt-8">
+              <button className="super-modal-cancel" style={{ width: '100%' }} onClick={() => setShowTestModal(false)}>
+                Close Test Suite
               </button>
             </div>
           </div>
