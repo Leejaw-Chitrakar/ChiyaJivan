@@ -20,185 +20,7 @@ import {
 import { initializeDatabase } from "../../lib/dbInit";
 import "../styles/MenuManager.css";
 
-// Fallback seed data (used if Firestore is empty)
-const SEED_MENU = {
-  "Hot Drinks": [
-    {
-      id: "h1",
-      name: "Milk Tea",
-      price: "35",
-      stock: true,
-      category: "Hot Drinks",
-      desc: "Our signature blend of CTC tea and creamy milk.",
-    },
-    {
-      id: "h2",
-      name: "Milk Masala Tea",
-      price: "45",
-      stock: true,
-      category: "Hot Drinks",
-      desc: "Spiced milk tea with fresh ginger and secret mountain spices.",
-    },
-    {
-      id: "h3",
-      name: "Black Masala Tea",
-      price: "25",
-      stock: true,
-      category: "Hot Drinks",
-      desc: "Invigorating black tea with aromatic spices.",
-    },
-    {
-      id: "h4",
-      name: "Hot Lemon Honey Ginger",
-      price: "100",
-      stock: true,
-      category: "Hot Drinks",
-      desc: "Wellness brew — zesty lemon, ginger, and honey.",
-    },
-    {
-      id: "h5",
-      name: "Hot Chocolate",
-      price: "160",
-      stock: true,
-      category: "Hot Drinks",
-      desc: "Velvety, rich chocolate with a dusting of cocoa.",
-    },
-  ],
-  "Cold Drinks": [
-    {
-      id: "c1",
-      name: "Mixed Lassi",
-      price: "150",
-      stock: true,
-      category: "Cold Drinks",
-      desc: "Thick, creamy yogurt lassi with seasonal fruits.",
-    },
-    {
-      id: "c2",
-      name: "KitKat Milkshake",
-      price: "225",
-      stock: false,
-      category: "Cold Drinks",
-      desc: "Vanilla blend with crunchy KitKat and chocolate.",
-    },
-    {
-      id: "c3",
-      name: "Classic Mojito",
-      price: "150",
-      stock: true,
-      category: "Cold Drinks",
-      desc: "Fresh mint, lime, and sparkling soda.",
-    },
-    {
-      id: "c4",
-      name: "Blue Lagoon",
-      price: "140",
-      stock: true,
-      category: "Cold Drinks",
-      desc: "Vibrant citrus punch with a hint of blue Curacao.",
-    },
-    {
-      id: "c5",
-      name: "Mocha Milkshake",
-      price: "250",
-      stock: true,
-      category: "Cold Drinks",
-      desc: "Blending rich chocolate and bold espresso notes.",
-    },
-  ],
-  "Food": [
-    {
-      id: "m1",
-      name: "Buff Momo",
-      price: "120 / 130",
-      stock: true,
-      category: "Food",
-      desc: "Hand-folded dumplings filled with lean buffalo meat.",
-    },
-    {
-      id: "m2",
-      name: "Chicken Momo",
-      price: "150 / 160",
-      stock: true,
-      category: "Food",
-      desc: "Succulent chicken filling in a delicate wrapper.",
-    },
-    {
-      id: "m3",
-      name: "Veg Momo",
-      price: "100 / 120",
-      stock: true,
-      category: "Food",
-      desc: "Filled with fresh garden greens and local spices.",
-    },
-    {
-      id: "m4",
-      name: "Buff Chilly",
-      price: "180",
-      stock: true,
-      category: "Food",
-      desc: "Wok-tossed bison chunks with spicy peppers.",
-    },
-    {
-      id: "m5",
-      name: "Chicken Wings",
-      price: "350",
-      stock: true,
-      category: "Food",
-      desc: "Crispy wings tossed in our signature Himalayan-glaze sauce.",
-    },
-    {
-      id: "m6",
-      name: "Sandwich (Veg/Chicken)",
-      price: "160 / 200",
-      stock: true,
-      category: "Food",
-      desc: "Freshly toasted with your choice of filling.",
-    },
-    {
-      id: "m7",
-      name: "Sausages (Stick)",
-      price: "40 / 50",
-      stock: true,
-      category: "Food",
-      desc: "Grilled to perfection. Choice of Buff or Chicken.",
-    },
-  ],
-  "Smoke": [
-    {
-      id: "s0",
-      name: "Hookha",
-      price: "500",
-      stock: true,
-      category: "Smoke",
-      desc: "Premium flavored hookah sessions.",
-    },
-    {
-      id: "s1",
-      name: "Surya (Red)",
-      price: "20",
-      stock: true,
-      category: "Smoke",
-      desc: "Premium Surya cigarette.",
-    },
-    {
-      id: "s2",
-      name: "Surya (Arctic Ball)",
-      price: "25",
-      stock: true,
-      category: "Smoke",
-      desc: "Cooling mint Surya cigarette.",
-    },
-    {
-      id: "s3",
-      name: "Shikhar Ice",
-      price: "15",
-      stock: true,
-      category: "Smoke",
-      desc: "Crisp ice-flavored cigarette.",
-    },
-  ],
-};
+// No longer using hardcoded seed data to avoid confusion with live database records.
 
 /** Group a flat array of items by category */
 function groupByCategory(items) {
@@ -245,7 +67,7 @@ const CATEGORY_COLORS = {
 };
 
 export default function MenuManager() {
-  const [menu, setMenu] = useState(SEED_MENU);
+  const [menu, setMenu] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -270,38 +92,18 @@ export default function MenuManager() {
       .then((items) => {
         if (!isMounted) return;
         if (items && items.length > 0) {
-          // Intelligent merge: Keep seed items but overlay Firestore items by name
-          const dbMenu = groupByCategory(items);
-          setMenu((prev) => {
-            const merged = { ...prev };
-            Object.keys(dbMenu).forEach((cat) => {
-              if (!merged[cat]) merged[cat] = [];
-
-              dbMenu[cat].forEach((newItem) => {
-                // Try to find existing item in the same category by name
-                const idx = merged[cat].findIndex(
-                  (i) => i.name === newItem.name,
-                );
-                if (idx >= 0) {
-                  // Update existing item with Firestore data (including ID)
-                  merged[cat][idx] = { ...merged[cat][idx], ...newItem };
-                } else {
-                  // Add new item as a completely new entry
-                  merged[cat].push(newItem);
-                }
-              });
-            });
-            return merged;
-          });
+          setMenu(groupByCategory(items));
+        } else {
+          setMenu({});
         }
       })
-      .catch((err) => console.error("Firestore load error:", err))
+      .catch((err) => {
+        console.error("Failed to load menu:", err);
+      })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
-    return () => {
-      isMounted = false;
-    };
+    return () => (isMounted = false);
   }, []);
 
   const categories = ["All", ...Object.keys(menu)];

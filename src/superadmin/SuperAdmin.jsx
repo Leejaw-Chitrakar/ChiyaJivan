@@ -17,7 +17,8 @@ import {
   getAllUsers,
   updateUserRole,
   subscribeToAuditLogs,
-  logAuditAction
+  logAuditAction,
+  updateSystemMaintenance
 } from "../lib/firestoreService";
 import "./SuperAdmin.css";
 
@@ -213,7 +214,7 @@ export default function SuperAdmin() {
               <button 
                 className="super-modal-confirm" 
                 style={{ background: confirmAction.color }}
-                onClick={() => handleAction(confirmAction.action)}
+                onClick={() => handleAction(confirmAction)}
               >
                 {isProcessing ? "Processing..." : "Yes, Proceed"}
               </button>

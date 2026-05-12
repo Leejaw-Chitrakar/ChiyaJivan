@@ -251,9 +251,6 @@ export async function getUserRole(uid) {
   const adminId = (import.meta.env.VITE_ADMIN_UID || "").trim();
   const currentId = (uid || "").trim();
 
-  console.log("🛠️ RBAC: Checking UID:", currentId);
-  console.log("🛠️ RBAC: SuperAdmin Target:", superId);
-
   if (currentId === superId) return "superadmin";
   if (currentId === adminId) return "admin";
 

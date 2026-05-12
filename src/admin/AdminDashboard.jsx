@@ -20,7 +20,7 @@ export default function AdminDashboard({ loginOnly = false }) {
   // Initial check: if we have a session, assume authenticated but still check firebase
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const hasSession = sessionStorage.getItem("isAdminAuth") === "true";
-    console.log("🔐 AdminDashboard: Initial Auth State from Session:", hasSession);
+
     return hasSession;
   });
   const [userRole, setUserRole] = useState(() => {
@@ -36,9 +36,9 @@ export default function AdminDashboard({ loginOnly = false }) {
 
   // Listen to genuine firebase auth state to prevent querying firestore without a token
   useEffect(() => {
-    console.log("🔐 AdminDashboard: Starting Auth Check...");
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("🔐 AdminDashboard: Auth State Changed:", user ? `User: ${user.uid}` : "No User");
+
 
       if (user) {
         setIsAuthenticated(true);
@@ -56,11 +56,11 @@ export default function AdminDashboard({ loginOnly = false }) {
             const role = await getUserRole(user.uid);
             clearTimeout(timeoutId);
 
-            console.log("🔐 AdminDashboard: Verified Role:", role);
+
             setUserRole(role);
             sessionStorage.setItem("userRole", role);
           } catch (err) {
-            console.error("🔐 AdminDashboard: Role verification failed:", err);
+          
             // Default to admin if verification fails
             setUserRole("admin");
             sessionStorage.setItem("userRole", "admin");
@@ -68,18 +68,18 @@ export default function AdminDashboard({ loginOnly = false }) {
         };
         verifyRole();
 
-        console.log("🔐 AdminDashboard: User verified, access granted.");
+
       } else {
         // Only clear if we didn't just log in (check session storage)
         // This avoids a flicker or race condition during sign-in redirects
         const hasSession = sessionStorage.getItem("isAdminAuth") === "true";
         if (!hasSession) {
-          console.log("🔐 AdminDashboard: No user and no session. Redirecting to login.");
+
           setIsAuthenticated(false);
           sessionStorage.removeItem("adminUid");
           sessionStorage.removeItem("userRole");
         } else {
-          console.log("🔐 AdminDashboard: No Firebase user yet, but session exists. Waiting...");
+
           // We don't set isAuthenticated to false yet, we wait for next event
           // or we can set it to false after a timeout if needed.
           // For now, let's just NOT clear it if we have a session.
