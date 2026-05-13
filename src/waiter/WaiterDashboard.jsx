@@ -33,7 +33,8 @@ const STATUS_CONFIG = {
   Served: { icon: Utensils, label: "Payment", next: "Completed", color: "#7c3aed" },
 };
 
-const HOOKHA_FLAVORS = ["Double Apple", "Mint", "Blueberry", "1001 Nights"];
+// Hookha flavors are now pulled dynamically from the menu item's options field
+const CATEGORY_ORDER = ["Hot Favorites", "Cold Beverage", "Cold Refreshing", "Milkshake", "Food", "Bakery & Desserts", "Smoke", "Hard Drinks"];
 
 export default function WaiterDashboard() {
   const [orders, setOrders] = useState([]);
@@ -43,7 +44,7 @@ export default function WaiterDashboard() {
   
   // View states
   const [takingOrder, setTakingOrder] = useState(false);
-  const [activeTab, setActiveTab] = useState("Hot Drinks");
+  const [activeTab, setActiveTab] = useState("Hot Favorites");
   const [waiterCart, setWaiterCart] = useState({});
   const [targetTable, setTargetTable] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -159,7 +160,14 @@ export default function WaiterDashboard() {
     }
   };
 
-  const categories = [...new Set(menuItems.map(i => i.category))];
+  const categories = [...new Set(menuItems.map(i => i.category))].sort((a, b) => {
+    const indexA = CATEGORY_ORDER.indexOf(a);
+    const indexB = CATEGORY_ORDER.indexOf(b);
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
   const cartCount = Object.values(waiterCart).reduce((sum, i) => sum + i.qty, 0);
   const cartTotal = Object.values(waiterCart).reduce((sum, i) => sum + (i.price * i.qty), 0);
 
@@ -187,10 +195,11 @@ export default function WaiterDashboard() {
 
   // Group orders by table
   const tableGroups = orders.reduce((acc, order) => {
-    if (!acc[order.table]) {
-      acc[order.table] = {
-        id: order.table,
-        name: tableNames[order.table] || `Table ${order.table}`,
+    const tableId = String(order.table);
+    if (!acc[tableId]) {
+      acc[tableId] = {
+        id: tableId,
+        name: tableNames[tableId] || `Table ${tableId}`,
         items: [],
         total: 0,
         customer: order.customer,
@@ -198,13 +207,13 @@ export default function WaiterDashboard() {
         lastUpdate: order.createdAt
       };
     }
-    acc[order.table].items.push(...order.items);
-    acc[order.table].total += order.total;
+    acc[tableId].items.push(...order.items);
+    acc[tableId].total += order.total;
     // Determine overall table status
-    const statuses = orders.filter(o => o.table === order.table).map(o => o.status);
-    if (statuses.includes("Pending")) acc[order.table].status = "Pending";
-    else if (statuses.includes("Preparing")) acc[order.table].status = "Preparing";
-    else if (statuses.includes("Served")) acc[order.table].status = "Served";
+    const statuses = orders.filter(o => String(o.table) === tableId).map(o => o.status);
+    if (statuses.includes("Pending")) acc[tableId].status = "Pending";
+    else if (statuses.includes("Preparing")) acc[tableId].status = "Preparing";
+    else if (statuses.includes("Served")) acc[tableId].status = "Served";
 
     return acc;
   }, {});
@@ -450,7 +459,7 @@ export default function WaiterDashboard() {
           <div className="waiter-modal" onClick={e => e.stopPropagation()}>
             <h3>Select Flavor</h3>
             <div className="waiter-flavor-grid">
-              {HOOKHA_FLAVORS.map(f => (
+              {(selectedHookha.options || ["Double Apple", "Mint", "Lady Killer", "Blueberry", "Pan Raas", "Watermelon", "Mix Fruit"]).map(f => (
                 <button key={f} onClick={() => addToWaiterCart(selectedHookha, f)}>
                   {f}
                 </button>

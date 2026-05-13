@@ -284,7 +284,10 @@ export default function OrderTracking() {
 
   // Grouping logic
   const tableGroups = orders.reduce((acc, order) => {
-    const tableId = order.table;
+    // Only group active orders for the "Live" table view
+    if (order.status === "Completed" || order.status === "Cancelled") return acc;
+
+    const tableId = String(order.table);
     if (!acc[tableId]) {
       acc[tableId] = {
         tableId,
@@ -299,7 +302,7 @@ export default function OrderTracking() {
       };
     }
     acc[tableId].orders.push(order);
-    if (order.status !== "Completed" && order.status !== "Cancelled") acc[tableId].hasLiveOrders = true;
+    acc[tableId].hasLiveOrders = true;
 
     // Keep sub-orders sorted by time
     acc[tableId].orders.sort((a, b) => a.createdAt?.toDate() - b.createdAt?.toDate());

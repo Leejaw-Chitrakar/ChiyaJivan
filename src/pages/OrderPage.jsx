@@ -11,6 +11,7 @@ import {
 import "../styles/OrderPage.css";
 
 // All menu categories and items are now loaded exclusively from Firestore.
+const CATEGORY_ORDER = ["Hot Favorites", "Cold Beverage", "Cold Refreshing", "Milkshake", "Food", "Bakery & Desserts", "Smoke", "Hard Drinks"];
 
 
 function groupByCategory(items) {
@@ -25,7 +26,7 @@ function groupByCategory(items) {
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table") || "?";
-  const [activeTab, setActiveTab] = useState("Chiya");
+  const [activeTab, setActiveTab] = useState("Hot Favorites");
   const [categories, setCategories] = useState({});
   const [tableCount, setTableCount] = useState(10);
   const [tableNames, setTableNames] = useState({});
@@ -38,15 +39,9 @@ export default function OrderPage() {
 
   const [isSiteDown, setIsSiteDown] = useState(false);
 
-  // Hookha Flavor State
+  // Hookha flavors are now pulled dynamically from the menu item's options field
   const [showFlavorModal, setShowFlavorModal] = useState(false);
   const [selectedHookha, setSelectedHookha] = useState(null);
-  const HOOKHA_FLAVORS = [
-    "Double Apple",
-    "Mint",
-    "Blueberry",
-    "1001 Nights"
-  ];
 
   useEffect(() => {
     // 1. Subscribe to shop settings
@@ -80,7 +75,14 @@ export default function OrderPage() {
     return acc;
   }, {});
 
-  const visibleTabs = Object.keys(visibleCategories);
+  const visibleTabs = Object.keys(visibleCategories).sort((a, b) => {
+    const indexA = CATEGORY_ORDER.indexOf(a);
+    const indexB = CATEGORY_ORDER.indexOf(b);
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
   useEffect(() => {
     if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
@@ -492,7 +494,7 @@ export default function OrderPage() {
             <h3 className="flavor-modal-title">Select Flavor</h3>
             <p className="flavor-modal-desc">Pick your favorite hookah flavor</p>
             <div className="flavor-grid">
-              {HOOKHA_FLAVORS.map(flavor => (
+              {(selectedHookha.options || ["Double Apple", "Mint", "Lady Killer", "Blueberry", "Pan Raas", "Watermelon", "Mix Fruit"]).map(flavor => (
                 <button
                   key={flavor}
                   className="flavor-btn"

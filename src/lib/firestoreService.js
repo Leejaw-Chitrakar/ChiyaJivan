@@ -315,6 +315,43 @@ export async function purgeOrdersBeforeDate(date) {
   return snap.size;
 }
 
+/** One-time migration to update category names in Firestore */
+export async function migrateMenuCategories() {
+  const mapping = {
+    "Hot Drinks": "Hot Favorites",
+    "Cold Drinks": "Cold Beverage",
+  };
+  const itemSpecifics = {
+    "Mojito": "Cold Refreshing",
+    "Blue Lagoon": "Cold Refreshing",
+    "Mickey Mouse 2": "Cold Refreshing",
+    "Masala(Coke/Sprite)": "Cold Refreshing",
+    "Lemon Sprite": "Cold Refreshing",
+    "Blue Angel": "Cold Refreshing",
+    "KitKat Milkshake": "Milkshake",
+    "Oreo Milkshake": "Milkshake",
+    "Vanilla Milkshake": "Milkshake",
+    "Chocolate Milkshake": "Milkshake",
+    "Mocha Milkshake": "Milkshake",
+  };
+
+  const snap = await getDocs(menuCol);
+  let count = 0;
+  const batch = writeBatch(db);
+
+  snap.docs.forEach(d => {
+    const data = d.data();
+    let newCat = itemSpecifics[data.name] || mapping[data.category] || data.category;
+    if (newCat !== data.category) {
+      batch.update(d.ref, { category: newCat });
+      count++;
+    }
+  });
+
+  await batch.commit();
+  return count;
+}
+
 /** Fetch all registered users for role management */
 export async function getAllUsers() {
   const snap = await getDocs(usersCol);

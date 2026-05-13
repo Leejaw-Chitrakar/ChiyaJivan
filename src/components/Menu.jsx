@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { subscribeToShopSettings, subscribeToMenuItems } from "../lib/firestoreService";
 import "../styles/Menu.css";
 
-const CATEGORY_ORDER = ["Hot Drinks", "Cold Drinks", "Food", "Smoke", "Bakery & Desserts"];
+const CATEGORY_ORDER = ["Hot Favorites", "Cold Beverage", "Cold Refreshing", "Milkshake", "Food", "Bakery & Desserts", "Smoke", "Hard Drinks"];
 
 const groupByCategory = (items) => {
   return items.reduce((acc, item) => {
@@ -16,7 +16,7 @@ const groupByCategory = (items) => {
 
 export default function Menu() {
   const navigate = useNavigate();
-  const [active, setActive] = useState("Hot Drinks");
+  const [active, setActive] = useState("Hot Favorites");
   const [categories, setCategories] = useState({});
   const [showPrompt, setShowPrompt] = useState(false);
   const [tableNum, setTableNum] = useState("");

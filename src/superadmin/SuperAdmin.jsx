@@ -23,7 +23,8 @@ import {
   logAuditAction,
   updateSystemMaintenance,
   clearAuditLogs,
-  purgeOrdersBeforeDate
+  purgeOrdersBeforeDate,
+  migrateMenuCategories
 } from "../lib/firestoreService";
 import "./SuperAdmin.css";
 
@@ -161,6 +162,15 @@ export default function SuperAdmin() {
       action: () => purgeOrdersBeforeDate(purgeDate),
       btnText: "Purge by Date",
       requiresDate: true
+    },
+    {
+      id: "migrate_cats",
+      title: "Migrate Categories",
+      desc: "Update all existing menu items to use the new category naming convention (e.g., Hot Drinks → Hot Favorites).",
+      icon: RefreshCcw,
+      color: "#8b5cf6",
+      action: () => migrateMenuCategories(),
+      btnText: "Fix Categories"
     }
   ];
 

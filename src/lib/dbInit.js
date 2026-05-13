@@ -9,19 +9,22 @@ import {
 } from "firebase/firestore";
 
 const INITIAL_CATEGORIES = [
-  { name: "Hot Drinks", order: 1 },
-  { name: "Cold Drinks", order: 2 },
-  { name: "Food", order: 3 },
-  { name: "Bakery & Desserts", order: 4 },
-  { name: "Smoke", order: 5 }
+  { name: "Hot Favorites", order: 1 },
+  { name: "Cold Beverage", order: 2 },
+  { name: "Cold Refreshing", order: 3 },
+  { name: "Milkshake", order: 4 },
+  { name: "Food", order: 5 },
+  { name: "Bakery & Desserts", order: 6 },
+  { name: "Smoke", order: 7 },
+  { name: "Hard Drinks", order: 8 },
 ];
 
 const INITIAL_MENU = [
-  // Hot Drinks
+  // 
   {
     name: "Milk Tea",
     price: "35",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Our signature blend of CTC tea and creamy milk.",
     stock: true,
     tag: "Local Favorite"
@@ -29,7 +32,7 @@ const INITIAL_MENU = [
   {
     name: "Black Tea",
     price: "20",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "A classic, strong mountain black tea.",
     stock: true,
     tag: null
@@ -37,7 +40,7 @@ const INITIAL_MENU = [
   {
     name: "Milk Masala Tea",
     price: "45",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Spiced milk tea brewed with fresh ginger and mountain spices.",
     stock: true,
     tag: "Bestseller"
@@ -45,7 +48,7 @@ const INITIAL_MENU = [
   {
     name: "Black Masala Tea",
     price: "25",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Invigorating black tea infused with aromatic spices.",
     stock: true,
     tag: null
@@ -53,7 +56,7 @@ const INITIAL_MENU = [
   {
     name: "Milk Coffee",
     price: "60",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Smooth and creamy café-style milk coffee.",
     stock: true,
     tag: null
@@ -61,7 +64,7 @@ const INITIAL_MENU = [
   {
     name: "Black Coffee",
     price: "40",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Bold and dark brewed mountain coffee.",
     stock: true,
     tag: null
@@ -69,7 +72,7 @@ const INITIAL_MENU = [
   {
     name: "Hot Lemon",
     price: "50",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Wellness brew — zesty lemon, ginger, and honey.",
     stock: true,
     tag: null
@@ -77,7 +80,7 @@ const INITIAL_MENU = [
   {
     name: "Hot Lemon, Honey And Ginger",
     price: "100",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Wellness brew — zesty lemon, ginger, and honey.",
     stock: true,
     tag: "Wellness"
@@ -85,7 +88,7 @@ const INITIAL_MENU = [
   {
     name: "Hot Lemon With Ginger",
     price: "100",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Soothing hot lemon water infused with fresh mountain ginger.",
     stock: true,
     tag: null
@@ -93,7 +96,7 @@ const INITIAL_MENU = [
   {
     name: "Hot Chocolate",
     price: "160",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Velvety, rich chocolate with a dusting of cocoa.",
     stock: true,
     tag: null,
@@ -101,18 +104,18 @@ const INITIAL_MENU = [
   {
     name: "Flavoured Tea(Peach/Lemon)",
     price: "70",
-    category: "Hot Drinks",
+    category: "Hot Favorites",
     desc: "Aromatic mountain tea with your choice of fruit infusion.",
     stock: true,
     tag: null,
-    options: ["Peach","Lemon"]
+    options: ["Peach", "Lemon"]
   },
 
-  // Cold Drinks
+  // Cold Beverage
   {
     name: "Cold Coffee",
     price: "180",
-    category: "Cold Drinks",
+    category: "Cold Beverage",
     desc: "Refreshing chilled coffee with a smooth, creamy finish.",
     stock: true,
     tag: null
@@ -120,7 +123,7 @@ const INITIAL_MENU = [
   {
     name: "Cold Lemon",
     price: "70",
-    category: "Cold Drinks",
+    category: "Cold Beverage",
     desc: "Zesty and chilled lemon cooler, perfect for a hot day.",
     stock: true,
     tag: null
@@ -128,16 +131,16 @@ const INITIAL_MENU = [
   {
     name: "Flavoured Ice Tea(Peach/Lemon)",
     price: "160",
-    category: "Cold Drinks",
+    category: "Cold Beverage",
     desc: "Chilled mountain tea infused with refreshing fruit flavours.",
     stock: true,
     tag: null,
-    options: ["Peach","Lemon"]
+    options: ["Peach", "Lemon"]
   },
   {
     name: "Lassi(Seasonal/Banana/Mango)",
     price: "150",
-    category: "Cold Drinks",
+    category: "Cold Beverage",
     desc: "Traditional yogurt-based drink in your favorite fruit flavor.",
     stock: true,
     tag: null,
@@ -146,22 +149,23 @@ const INITIAL_MENU = [
   {
     name: "Plain Lassi",
     price: "115",
-    category: "Cold Drinks",
+    category: "Cold Beverage",
     desc: "Thick, creamy yogurt lassi with seasonal fruits.",
     stock: true,
     tag: null
   },
+  // Refreshing 
   {
     name: "Mojito",
     price: "150",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "Fresh mint, lime, and sparkling soda.",
     stock: true, tag: null
   },
   {
     name: "Blue Lagoon",
     price: "140",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "A vibrant citrus punch with a hint of blue Curacao.",
     stock: true,
     tag: null
@@ -169,7 +173,7 @@ const INITIAL_MENU = [
   {
     name: "Mickey Mouse 2",
     price: "140",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "A fun and colourful layered mocktail for all ages.",
     stock: true,
     tag: null
@@ -177,7 +181,7 @@ const INITIAL_MENU = [
   {
     name: "Masala(Coke/Sprite)",
     price: "90",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "Your favorite soda with a spicy Nepali masala twist.",
     stock: true,
     tag: null,
@@ -186,7 +190,7 @@ const INITIAL_MENU = [
   {
     name: "Lemon Sprite",
     price: "90",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "Refreshing Sprite with a zesty fresh lemon kick.",
     stock: true,
     tag: null
@@ -194,19 +198,51 @@ const INITIAL_MENU = [
   {
     name: "Blue Angel",
     price: "180",
-    category: "Cold Drinks",
+    category: "Refreshing",
     desc: "A vibrant, blue-themed tropical mocktail experience.",
     stock: true,
     tag: null
   },
+  // Milkshake
   {
-    name: "Milkshake",
+    name: "KitKat Milkshake",
     price: "225",
-    category: "Cold Drinks",
-    desc: "Creamy, thick milkshake in various delicious flavors.",
+    category: "Milkshake",
+    desc: "Indulgent milkshake blended with crunchy KitKat bars and chocolate drizzle.",
     stock: true,
-    tag: "Popular",
-    options: ["KitKate", "Oreo", "Vanilla", "Chocolate", "Mocha"]
+    tag: "Popular"
+  },
+  {
+    name: "Oreo Milkshake",
+    price: "225",
+    category: "Milkshake",
+    desc: "Classic creamy milkshake loaded with crushed Oreo cookies and vanilla cream.",
+    stock: true,
+    tag: "Popular"
+  },
+  {
+    name: "Vanilla Milkshake",
+    price: "225",
+    category: "Milkshake",
+    desc: "Smooth and elegant milkshake made with premium vanilla beans.",
+    stock: true,
+    tag: null
+  },
+  {
+    name: "Chocolate Milkshake",
+    price: "225",
+    category: "Milkshake",
+    desc: "Rich, velvety milkshake crafted with deep cocoa and silky chocolate sauce.",
+    stock: true,
+    tag: null
+  },
+  {
+    name: "Mocha Milkshake",
+    price: "250",
+    category: "Milkshake",
+    desc: "A perfect fusion of bold espresso and sweet chocolate in a chilled milkshake.",
+    stock: true,
+    tag: null
   },
 
   // Food
@@ -331,7 +367,7 @@ const INITIAL_MENU = [
     desc: "Premium flavored hookah sessions.",
     stock: true,
     tag: "Premium",
-    options: ["Double Apple", "Mint", "Grapes", "Blueberry", "Pan Raas", "Watermelon", "Mix Fruit"]
+    options: ["Double Apple", "Mint", "Lady Killer", "Blueberry", "Pan Raas", "Watermelon", "Mix Fruit"]
   },
   {
     name: "Surya (Red)",
