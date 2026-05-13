@@ -22,7 +22,8 @@ import {
   subscribeToAuditLogs,
   logAuditAction,
   updateSystemMaintenance,
-  clearAuditLogs
+  clearAuditLogs,
+  purgeOrdersBeforeDate
 } from "../lib/firestoreService";
 import "./SuperAdmin.css";
 
@@ -51,6 +52,7 @@ export default function SuperAdmin() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [activeTab, setActiveTab] = useState("controls"); // controls, staff, audit
   const [showTestModal, setShowTestModal] = useState(false);
+  const [purgeDate, setPurgeDate] = useState("");
 
   useEffect(() => {
     const unsubSettings = subscribeToShopSettings(setShopSettings);
@@ -68,9 +70,13 @@ export default function SuperAdmin() {
   const handleAction = async (item) => {
     setIsProcessing(true);
     try {
-      await item.action();
-      await logAuditAction(item.title, "Success");
+      const result = await item.action();
+      const detail = typeof result === "number" ? `Success (${result} records affected)` : "Success";
+      await logAuditAction(item.title, detail);
       setConfirmAction(null);
+      if (typeof result === "number") {
+        alert(`${item.title} completed. ${result} records removed.`);
+      }
     } catch (err) {
       alert("Action failed!");
     } finally {
@@ -145,6 +151,16 @@ export default function SuperAdmin() {
       color: "#3b82f6",
       action: () => setShowTestModal(true),
       btnText: "Open Test Suite"
+    },
+    {
+      id: "purge_by_date",
+      title: "Custom Data Purge",
+      desc: "Permanently delete all orders created on or before a specific date. Use with extreme caution.",
+      icon: Trash2,
+      color: "#ef4444",
+      action: () => purgeOrdersBeforeDate(purgeDate),
+      btnText: "Purge by Date",
+      requiresDate: true
     }
   ];
 
@@ -183,12 +199,26 @@ export default function SuperAdmin() {
               <h3 className="super-card-title">{item.title}</h3>
               <p className="super-card-desc">{item.desc}</p>
 
+              {item.requiresDate && (
+                <div className="purge-date-input-wrapper">
+                  <label>Select Cutoff Date:</label>
+                  <input 
+                    type="date" 
+                    className="purge-date-input"
+                    value={purgeDate}
+                    onChange={(e) => setPurgeDate(e.target.value)}
+                  />
+                </div>
+              )}
+
               <button
                 className="super-card-btn"
                 style={{ background: item.color }}
                 onClick={() => {
                   if (item.id === "test_features") {
                     setShowTestModal(true);
+                  } else if (item.requiresDate && !purgeDate) {
+                    alert("Please select a date first.");
                   } else {
                     setConfirmAction(item);
                   }
@@ -208,15 +238,15 @@ export default function SuperAdmin() {
             <table className="staff-table">
               <thead>
                 <tr>
-                  <th>Staff Member</th>
-                  <th>Current Role</th>
-                  <th>Actions</th>
+                  <th className="staff-member-header">Staff Member</th>
+                  <th className="role-header">Current Role</th>
+                  <th className="actions-header">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
                   <tr key={u.uid}>
-                    <td className="staff-email">
+                    <td className="staff-email" data-label="Staff Member">
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#111827' }}>
                           {u.displayName || "No Name Set"}
@@ -226,10 +256,10 @@ export default function SuperAdmin() {
                         </span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Current Role">
                       <span className={`role-pill ${u.role || 'visitor'}`}>{u.role || 'visitor'}</span>
                     </td>
-                    <td className="staff-actions">
+                    <td className="staff-actions" data-label="Update Role">
                       <select
                         value={u.role || 'visitor'}
                         onChange={(e) => handleRoleUpdate(u.uid, e.target.value)}

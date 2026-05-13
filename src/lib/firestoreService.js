@@ -301,6 +301,20 @@ export async function purgeOldOrders(days = 30) {
   return snap.size; // Return count of deleted items
 }
 
+/** Delete orders created before a specific date */
+export async function purgeOrdersBeforeDate(date) {
+  const threshold = new Date(date);
+  // Set to end of day to include the entire selected date
+  threshold.setHours(23, 59, 59, 999);
+
+  const q = query(ordersCol, where("createdAt", "<=", threshold));
+  const snap = await getDocs(q);
+
+  const deletions = snap.docs.map(d => deleteDoc(d.ref));
+  await Promise.all(deletions);
+  return snap.size;
+}
+
 /** Fetch all registered users for role management */
 export async function getAllUsers() {
   const snap = await getDocs(usersCol);
